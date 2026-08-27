@@ -5,9 +5,7 @@ import type { BotVerdict, ReplyData } from "../types.js";
  * Profile high-signal gates only (see docs/agent/scoring.md). No text heuristics.
  */
 
-function verdict(
-	partial: Omit<BotVerdict, "source"> & { source?: BotVerdict["source"] },
-): BotVerdict {
+function verdict(partial: Omit<BotVerdict, "source"> & { source?: BotVerdict["source"] }): BotVerdict {
 	return {
 		isBot: Boolean(partial.isBot),
 		isSlop: Boolean(partial.isSlop),
@@ -65,11 +63,7 @@ export function classifyExtremeFarmProfile(reply: ReplyData): BotVerdict | null 
 		confidence: 0.9,
 		category: "airdrop_farmer",
 		reason: `Extreme follow-farm profile: following ${following} vs ${followers} followers (${ratioLabel})`,
-		signals: [
-			"profile_ratio_extreme",
-			`following_${following}`,
-			`followers_${followers}`,
-		],
+		signals: ["profile_ratio_extreme", `following_${following}`, `followers_${followers}`],
 	});
 }
 
@@ -92,10 +86,6 @@ export function classifyNewShellFarm(reply: ReplyData): BotVerdict | null {
 		confidence: 0.88,
 		category: "airdrop_farmer",
 		reason: `New shell account (~${Math.round(age)}d) mass-following with default avatar`,
-		signals: [
-			"profile_new_shell",
-			`age_days_${Math.round(age)}`,
-			`ratio_${Math.round(ratio)}`,
-		],
+		signals: ["profile_new_shell", `age_days_${Math.round(age)}`, `ratio_${Math.round(ratio)}`],
 	});
 }

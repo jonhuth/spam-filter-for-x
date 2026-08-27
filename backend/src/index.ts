@@ -149,7 +149,7 @@ app.get("/api/health", (c) => {
 // Root
 app.get("/", (c) => {
 	return c.json({
-		name: "X Bot Detector API",
+		name: "Spam Filter for X API",
 		version: "2.0.0",
 		endpoints: {
 			classify: "POST /api/classify",
@@ -167,7 +167,7 @@ app.get("/", (c) => {
 });
 
 const port = Number(process.env.PORT) || 3000;
-console.log(`Starting X Bot Detector API v2 on port ${port}`);
+console.log(`Starting Spam Filter for X API on port ${port}`);
 
 export default {
 	port,

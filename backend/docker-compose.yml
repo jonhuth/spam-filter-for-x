@@ -1,0 +1,13 @@
+services:
+  spam-filter-backend:
+    build: .
+    container_name: spam-filter-backend
+    restart: unless-stopped
+    ports:
+      - "3004:3000"
+    environment:
+      - PORT=3000
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
+    # Network: uses host network or default bridge.
+    # If on Tailscale on the NAS, binding 3000 allows direct tailnet access.

@@ -28,19 +28,14 @@ Output JSON only:
 is_bot, is_slop, confidence, category (genuine|airdrop_farmer|engagement_farmer|crypto_spam|llm_slop|sycophant|self_promoter), reason, signals[]`;
 
 function formatReplyBlock(r: ReplyData, i: number): string {
-	const parts: string[] = [
-		`REPLY ${i + 1}: @${r.username} (${r.displayName})`,
-		`Text: "${r.replyText || "[empty]"}"`,
-	];
+	const parts: string[] = [`REPLY ${i + 1}: @${r.username} (${r.displayName})`, `Text: "${r.replyText || "[empty]"}"`];
 	if (r.originalTweetText) {
 		parts.push(`OP: "${String(r.originalTweetText).slice(0, 300)}"`);
 	}
 	if (r.bio) parts.push(`Bio: "${String(r.bio).slice(0, 200)}"`);
 	if (r.followers > 0 || r.following > 0) {
 		const ratio = r.following / Math.max(r.followers, 1);
-		parts.push(
-			`Followers: ${r.followers} Following: ${r.following} ratio: ${ratio.toFixed(1)}x`,
-		);
+		parts.push(`Followers: ${r.followers} Following: ${r.following} ratio: ${ratio.toFixed(1)}x`);
 	} else {
 		parts.push("Followers/following: unknown");
 	}
