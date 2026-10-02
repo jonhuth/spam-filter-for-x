@@ -17,7 +17,9 @@ interface SuggestBody {
 app.post("/", async (c) => {
 	try {
 		const body = (await c.req.json()) as SuggestBody;
-		const seed = String(body.seed || "").trim().slice(0, 80);
+		const seed = String(body.seed || "")
+			.trim()
+			.slice(0, 80);
 		const kind = body.kind === "account" ? "account" : "word";
 		const limit = Math.min(24, Math.max(4, Number(body.limit) || 12));
 

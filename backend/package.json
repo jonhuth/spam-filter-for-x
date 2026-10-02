@@ -1,5 +1,5 @@
 {
-  "name": "x-bot-detector-backend",
+  "name": "spam-filter-for-x-backend",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
-    "hono": "^4.7.0",
+    "hono": "^4.13.8",
     "lru-cache": "^11.0.0"
   },
   "devDependencies": {
