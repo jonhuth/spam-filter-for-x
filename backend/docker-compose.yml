@@ -1,7 +1,10 @@
+# Deploy on nas: cd ~/dev/spam-filter-for-x/backend && docker compose up -d --build
+# Service/container name matches projects/registry.yaml ops.unit (x-account-backend).
+
 services:
-  spam-filter-backend:
+  x-account-backend:
     build: .
-    container_name: spam-filter-backend
+    container_name: x-account-backend
     restart: unless-stopped
     ports:
       - "3004:3000"
@@ -10,4 +13,4 @@ services:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
     # Network: uses host network or default bridge.
-    # If on Tailscale on the NAS, binding 3000 allows direct tailnet access.
+    # Published on nas:3004 (registry port); the container still listens on 3000.
