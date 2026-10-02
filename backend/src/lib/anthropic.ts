@@ -112,6 +112,10 @@ function toVerdict(parsed: AIResponse): BotVerdict {
 }
 
 export async function classifySingleReply(reply: ReplyData): Promise<BotVerdict | null> {
+	if (!process.env.ANTHROPIC_API_KEY) {
+		return null;
+	}
+
 	try {
 		const message = await anthropic.messages.create({
 			model: "claude-haiku-4-5-20251001",
@@ -135,6 +139,9 @@ export async function classifySingleReply(reply: ReplyData): Promise<BotVerdict 
 
 export async function classifyBatchReplies(replies: ReplyData[]): Promise<(BotVerdict | null)[]> {
 	if (replies.length === 0) return [];
+	if (!process.env.ANTHROPIC_API_KEY) {
+		return replies.map(() => null);
+	}
 	if (replies.length === 1) {
 		const result = await classifySingleReply(replies[0]);
 		return [result];

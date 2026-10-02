@@ -24,6 +24,7 @@ The three containing-app steps:
 - [ ] Privacy answers: no tracking and no extension-owned backend.
 - [ ] Explain that location uses X's `AboutAccountQuery` through the user's current X session in page context.
 - [ ] Confirm the manifest permits only x.com/twitter.com plus local `storage` and `tabs` capabilities.
+- [ ] Repo visibility: keep public (see docs/agent/repo-visibility.md) to preserve App Store Privacy Policy and Support URLs.
 
 ## Human device acceptance
 
