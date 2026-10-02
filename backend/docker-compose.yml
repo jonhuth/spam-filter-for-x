@@ -1,4 +1,7 @@
-# Deploy on nas: cd ~/dev/spam-filter-for-x/backend && docker compose up -d --build
+# Deploy on nas:
+#   cd ~/dev/spam-filter-for-x/backend
+#   cp .env.example .env # set ANTHROPIC_API_KEY
+#   docker compose up -d --build
 # Service/container name matches projects/registry.yaml ops.unit (x-account-backend).
 
 services:
@@ -8,9 +11,12 @@ services:
     restart: unless-stopped
     ports:
       - "3004:3000"
+    env_file:
+      - path: .env
+        required: false
     environment:
       - PORT=3000
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
     # Network: uses host network or default bridge.
     # Published on nas:3004 (registry port); the container still listens on 3000.
