@@ -130,10 +130,10 @@ else
 fi
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-if [[ -f "${ROOT}/extension/manifest.json" ]]; then
-  pass "extension/manifest.json present"
+if [[ -f "${ROOT}/static/manifest.json" ]]; then
+  pass "static/manifest.json present (run bun run build → dist/)"
 else
-  bad "missing ${ROOT}/extension/manifest.json"
+  bad "missing ${ROOT}/static/manifest.json"
 fi
 
 if [[ -n "${DEVELOPMENT_TEAM:-}" ]]; then

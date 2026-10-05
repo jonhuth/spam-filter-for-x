@@ -1,29 +1,37 @@
 # Spam Filter for X
 
-Hide bots, spam countries, and clutter on X. All on this device.
+Hide bots, AI slop, spam countries, and clutter on X. All on this device.
 
 - **Safari (iOS + macOS)** — product (App Store / TestFlight)
-- **Chrome** — load unpacked from `extension/` for R&D
+- **Chrome** — `bun run build`, load unpacked `dist/` (R&D)
 
 x.com only. Not Desloppify (all-web slop).
 
 ## What it does
 
-- Hide farm / bot accounts (local signals; people you follow stay)
-- Hide posts from countries that flood the feed
-- Hide X chrome (For you, Explore, trends, Who to follow, ads, …) — saved locally
+- Flag every account with the country or region X says it is based in (🇺🇸 🇮🇳 🌏)
+- Hide farm accounts and collapse low-quality replies: AI-style, generic, copy-paste, and off-region accounts piling into another region's politics. Each one shows why.
+- Tap any flag or badge to mute, block, trust, hide a country, or mute a word in one tap. Undo is in the toast.
+- Hide X chrome (For you, Explore, trends, Who to follow, ads, …)
+- Everything runs and is stored on your device. People you follow are never scored.
 
 ## Chrome
 
-`chrome://extensions` → Load unpacked → `extension/`
+`bun run build` → `chrome://extensions` → Load unpacked → `dist/`
 
 ## Safari
 
 ```bash
-APP_NAME="Spam Filter for X" BUNDLE_ID=com.aevum.spamfilter ./safari/convert.sh
+APP_NAME="Spam Filter for X" BUNDLE_ID=com.aevum.spamfilter ./safari/convert.sh   # builds dist/ first
 ```
 
 Use Safari → x.com, not the X app. [safari/TESTING.md](./safari/TESTING.md) · [docs/agent/app-store-ship.md](./docs/agent/app-store-ship.md)
+
+## Develop
+
+```bash
+bun install && bun run check && bun run e2e
+```
 
 ## Privacy
 

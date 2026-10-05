@@ -1,0 +1,45 @@
+{
+  "data": {
+    "user_result_by_screen_name": {
+      "id": "VXNlclJlc3VsdHM6MTU5OTgxMjM0NTY3ODkwMTI0OA==",
+      "result": {
+        "__typename": "User",
+        "about_profile": {
+          "account_based_in": "South Asia",
+          "created_country_accurate": false,
+          "learn_more_url": "https://help.x.com/en/rules-and-policies/profile-labels",
+          "location_accurate": false,
+          "source": "Web",
+          "username_changes": {
+            "count": "0"
+          }
+        },
+        "affiliates_highlighted_label": {},
+        "avatar": {
+          "image_url": "https://pbs.twimg.com/profile_images/1834455667788990464/aB3dE5fG_normal.jpg"
+        },
+        "core": {
+          "created_at": "Wed Nov 30 09:12:44 +0000 2022",
+          "name": "Priya Raman",
+          "screen_name": "priya_codes"
+        },
+        "id": "VXNlcjoxNTk5ODEyMzQ1Njc4OTAxMjQ4",
+        "identity_profile_labels_highlighted_label": {},
+        "is_blue_verified": false,
+        "privacy": {
+          "protected": false
+        },
+        "profile_image_shape": "Circle",
+        "rest_id": "1599812345678901248",
+        "verification": {
+          "verified": false
+        },
+        "verification_info": {
+          "id": "VXNlclZlcmlmaWNhdGlvbkluZm86MTU5OTgxMjM0NTY3ODkwMTI0OA==",
+          "is_identity_verified": false,
+          "reason": {}
+        }
+      }
+    }
+  }
+}

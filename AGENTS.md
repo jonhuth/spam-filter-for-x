@@ -1,101 +1,67 @@
 # Spam Filter for X - AGENTS.md
 
-Spam Filter for X is an x.com Safari/Chrome extension that cuts noise: hide farm accounts, hide spam countries, and persist chrome declutter on-device.
+Local-first Safari/Chrome extension for x.com: country/region flags, farm and
+low-quality reply filtering, one-tap mute/block/hide, and X chrome declutter.
 
-**Surface strategy:** Safari on iOS is the paid product. Chrome is the load-unpacked R&D loop. Keep X in Safari, not the native X app.
+**Surface strategy:** Safari on iOS is the paid product. Chrome is the load-unpacked R&D loop.
+Keep X in Safari, not the native X app.
 
-## Monday MVP
+## Architecture (v4)
 
-1. Hide farm/bot tweets locally (people you follow never scored).
-2. Hide tweets from selected countries (tap a flag or popup).
-3. Persist per-view X chrome toggles on device. Calm-home preset optional.
-4. Client-only. Empty classify URL. No Desloppify merge.
-
-## Architecture
+One pipeline; every feature is a signal or a list, not a separate system:
 
 ```text
-spam-filter-for-x/
-├── extension/             # Shared MV3 WebExtension source
-│   ├── manifest.json      # Spam Filter for X 3.0.0
-│   ├── popup.html/js      # Location first, country hide, Calm home
-│   ├── content.js         # Location and timeline UI coordinator
-│   ├── pageScript.js      # X AboutAccountQuery in page context
-│   ├── countryFlags.js    # Canonical label to emoji map
-│   ├── countryFilter.js   # Client-only hidden-country storage and matching
-│   ├── focusMode.js       # Optional Calm home behavior
-│   ├── bot*.js            # Parked Chrome R&D; default off
-│   └── icons/
-├── safari/                # Mac-only converter, build, and test docs
-├── backend/               # Parked bot R&D; not part of the paid package path
-└── docs/agent/            # Agent and App Store runbooks
+X's own GraphQL traffic ─▶ page/main.ts (page world: fetch+XHR hook, AboutAccountQuery, mute/block on X)
+        │ postMessage (nonce-tagged, shared/bridge.ts)
+        ▼
+content/main.ts ─▶ Store (accounts, posts, 30d about cache) ─▶ core/decide ─▶ render + menu
+                              ▲                                   │
+                     AboutQueue (rate-limited)          core/score (named weighted signals)
 ```
 
-## Country filtering
-
-Storage key: `hidden_countries`
-
-```javascript
-{
-  countries: ['India', 'United States'],
-  updatedAt: 0,
-}
+```text
+src/core/      pure, tested: xparse (all X layouts), country (flags, blocs), context (thread region,
+               politics), text (slop features, duplicate clusters), score, decide
+src/shared/    settings (one typed object, v3 migration, lists), bridge (message types)
+src/page/      page-world script (built to dist/page.js)
+src/content/   orchestrator, store, aboutQueue, dom (ALL X selectors), render, menu, focus.js (v3 port)
+src/popup/     Filter / Lists / Layout
+static/        manifest, popup.html, icons → copied into dist/
+test/          bun tests + fixtures of real X response shapes
+e2e/           Chromium + mock x.com: loads dist/, asserts behavior, screenshots to e2e/out/
+backend/       PARKED; not used by the extension. Slated for retirement (nas container).
 ```
 
-`countryFilter.js` canonicalizes exact country names, the last comma-separated part, and the longest matching `COUNTRY_FLAGS` key. Unknown labels remain hideable as trimmed regions.
+## Rules
 
-Only `article[data-testid="tweet"]` can receive:
-
-- `data-xat-country="India"`
-- `data-xat-geo-hidden="1"`
-- `display: none`
-
-Do not hide profile headers or `UserCell` elements. A flag is a tap target with a title and accessible label. Storage changes and the `countryFilterUpdated` popup message trigger a rescan.
-
-## Location flow
-
-1. A content observer finds username containers.
-2. `pageScript.js` makes X's `AboutAccountQuery` with the user's page session.
-3. `content.js` caches the returned location for 30 days.
-4. `countryFlags.js` supplies the emoji.
-5. `content.js` inserts the flag and annotates the containing tweet.
-6. `countryFilter.js` decides whether the tweet is hidden.
-
-No external backend host permission belongs in `extension/manifest.json`.
-
-## Parked bot R&D
-
-Local bot scripts are loaded. `bot_detection_enabled` defaults **on**. Backend URL is empty — never call classify. Hide matching farm tweets (`data-xat-bot-hidden`). Mute-manager, Clean Interests, and AI lookup stay out of the popup. Not Desloppify (all-web).
-
-## Safari compatibility
-
-- Prefer `chrome.*`; Safari Web Extensions support that namespace.
-- Do not gate storage writes on `getBytesInUse`. A missing quota API means allow the write.
-- iOS requires an Xcode containing app and per-site permission.
-- Keep the extension content-script driven. Do not require a persistent background worker.
-- Do not invent or commit generated Xcode project files.
-
-## Defensive JavaScript
-
-```javascript
-String(value || '').toLowerCase()
-(Array.isArray(value) ? value : []).map(fn)
-object?.property ?? fallback
-```
-
-Check `chrome.runtime?.id` before storage operations in invalidatable extension contexts. Wrap storage access in `try/catch`. No secrets or noisy console logging.
+- **Local-first.** No extension-owned server. `bun run check:no-backend` fails the build if dist/
+  references any host but x.com/twitter.com/twimg.com. Any future server (Cloudflare) is opt-in,
+  carries no per-user data, and must update docs/privacy.md first.
+- **Scoring bias:** missing a bot beats flagging a person. People you follow and your trusted list
+  are never scored. `farm` requires a `strong` signal. Country alone never produces `slop`.
+  Every signal has a human-readable reason shown in the menu and collapsed bar.
+- **Lists beat scores.** Order in `decide`: blocked > muted account > muted word > trusted/follow >
+  hidden country > score action. The focal post on a status page is never hidden.
+- **X schema drift:** parse via `core/xparse.ts` only. It reads current (`core`, `avatar`,
+  `relationship_counts`, no `legacy`), hybrid, and pre-2025 layouts; see
+  `docs/agent/x-graphql-schema.md`. Add a fixture before changing the parser.
+- **DOM drift:** selectors live only in `content/dom.ts`.
+- **Query ids:** learned from live traffic, then X's main bundle, then fallback constants.
+- **Safari:** prefer `chrome.*`; wrap storage in try/catch; no persistent background worker;
+  don't commit generated Xcode projects.
 
 ## Development
 
-### Chrome
+```bash
+bun install
+bun run check        # typecheck, biome, unit tests, build, no-backend scan
+bun run e2e          # real Chromium + mock x.com; screenshots in e2e/out/
+bun run watch        # rebuild dist/ on change
+```
 
-1. Open `chrome://extensions/` and enable Developer mode.
-2. Load unpacked from `extension/`.
-3. Open x.com.
-4. Refresh the extension and x.com after source changes.
+Chrome: `chrome://extensions` → Developer mode → Load unpacked → `dist/`.
 
-### Safari
-
-Safari conversion and Xcode builds are Mac-only.
+Safari (Mac only; `convert.sh` builds dist/ first):
 
 ```bash
 export DEVELOPMENT_TEAM=XXXXXXXXXX
@@ -104,16 +70,5 @@ export DEVELOPMENT_TEAM=XXXXXXXXXX
 ./safari/run-sim.sh
 ```
 
-Human setup remains: enable Spam Filter for X in Safari settings and allow x.com. See `safari/TESTING.md` and `docs/agent/app-store-ship.md`.
-
-## MVP checks
-
-```bash
-node --check extension/countryFilter.js
-node --check extension/content.js
-node --check extension/popup.js
-rg -n 'railway|anthropic|x-bot-detector' \
-  extension/manifest.json extension/popup.html extension/popup.js extension/countryFilter.js
-```
-
-The search must return no matches. Chrome must load from `extension/`. Safari conversion, signing, TestFlight, and App Store submission stay on a Mac.
+Human setup remains: enable the extension in Safari settings and allow x.com.
+See `safari/TESTING.md` and `docs/agent/app-store-ship.md`.

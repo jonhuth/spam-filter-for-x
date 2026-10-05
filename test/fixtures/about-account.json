@@ -1,0 +1,48 @@
+{
+  "data": {
+    "user_result_by_screen_name": {
+      "id": "VXNlclJlc3VsdHM6MTg3NjU0MzIxMDk4NzY1NDMyMQ==",
+      "result": {
+        "__typename": "User",
+        "about_profile": {
+          "account_based_in": "India",
+          "created_country_accurate": true,
+          "learn_more_url": "https://help.x.com/en/rules-and-policies/profile-labels",
+          "location_accurate": true,
+          "source": "India Android App",
+          "username_changes": {
+            "count": "4",
+            "last_changed_at_msec": "1756702861000"
+          }
+        },
+        "affiliates_highlighted_label": {},
+        "avatar": {
+          "image_url": "https://pbs.twimg.com/profile_images/1879000111222333444/Zz9yXw8V_normal.jpg"
+        },
+        "core": {
+          "created_at": "Tue Jan 14 03:21:09 +0000 2025",
+          "name": "Crypto Gains 🚀💰",
+          "screen_name": "crypto_gains_2026"
+        },
+        "id": "VXNlcjoxODc2NTQzMjEwOTg3NjU0MzIx",
+        "identity_profile_labels_highlighted_label": {},
+        "is_blue_verified": true,
+        "privacy": {
+          "protected": false
+        },
+        "profile_image_shape": "Circle",
+        "rest_id": "1876543210987654321",
+        "verification": {
+          "verified": false
+        },
+        "verification_info": {
+          "id": "VXNlclZlcmlmaWNhdGlvbkluZm86MTg3NjU0MzIxMDk4NzY1NDMyMQ==",
+          "is_identity_verified": false,
+          "reason": {
+            "verified_since_msec": "1736825000000"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,48 +1,44 @@
-# Bot scoring — simple high-signal model
+# Scoring
 
-Status: active. Prefer missing bots over false bots.
+Status: active (v4). Source of truth: `src/core/score.ts` and `src/core/decide.ts`.
 
-## Research takeaway (browser extension constraints)
+A post's score is the sum of named signals. Each has a weight and a reason that the
+UI shows. Labels: `trusted`, `ok`, `slop`, `farm`.
 
-Full academic detectors use 100+ features (timing, graphs, media). We only get **DOM + passive intercepts + one AI call**. Best ROI signals that farms still struggle to fake *cheaply*:
+| Strictness | slop ≥ | farm ≥ (needs a strong signal) |
+|---|---|---|
+| Relaxed | 3.5 | 5.5 |
+| Balanced | 2.5 | 4.5 |
+| Strict | 1.8 | 3.5 |
 
-| Signal | Strength | Notes |
-|--------|----------|--------|
-| You follow / mutual | Absolute | Never score as bot |
-| User override | Absolute | Permanent pin |
-| Extreme following/followers ratio | Very high | Follow-to-get-followed farms |
-| New account + mass follow + default avatar | High | Shell farms |
-| Thread near-duplicate clusters | High | Coordination (status views) |
-| Reply text alone | Low–medium | Short chat is human; AI only, conservative |
-| Empty bio / crypto buzzwords alone | Low | Too many FPs — do not local-flag |
+`slop` applies only to replies, unless a strong signal fired.
 
-Sources: Botcheck / honeypot literature (spammers follow more, young accounts), industry metadata checklists (ratio, age, default avatar), FP analysis of LLM tweet-only classifiers.
+## Signals
 
-## Pipeline (order)
+| Group | Signal | Weight |
+|---|---|---|
+| Account | farm ratio: following ≥ 2500, followers < 120, ratio ≥ 30 (strong) | +3 |
+| Account | new shell: ≤ 45 days old, mass-following (strong) | +3 |
+| Account | age < 30d / < 120d | +1.2 / +0.6 |
+| Account | default avatar · auto-generated handle (6+ trailing digits) | +0.6 · +0.5 |
+| Account | paid checkmark with < 150 followers · renamed 3+ times | +0.8 · +0.8 |
+| Account | established (5y+, 300+ followers) · large organic following (20k+, no paid check) | −1.5 · −1 |
+| Account | follows you | −2 |
+| Geo | off-region in a political thread of another region | +2 |
+| Geo | off-region in a non-political regional thread | +0.5 |
+| Geo | X flags the location as possibly inaccurate (VPN) | +0.7 |
+| Geo | based-in ≠ app-store country (e.g. US-based via "Nigeria Android App") | +1.2 |
+| Geo | country is on your watch list | +1.5 |
+| Text | spam bait: DM me, t.me, airdrop, wallet address, adult bait (strong) | +3 |
+| Text | generic praise (short) · AI-style phrasing · restates the parent post | +1 each |
+| Text | emoji-only · 3+ hashtags | +0.5 · +0.6 |
+| Thread | near-duplicate of replies by 2+ other accounts (strong) | +2.5 |
 
-```
-1. Override / whitelist / hard-trust     → pinned, no AI
-2. Local profile gates only             → extreme ratio OR new shell stack
-3. Thread near-duplicate (status only)  → bot cluster
-4. Account prior (2+ strong bot hits)   → skip AI
-5. AI (Haiku)                           → is_bot only if conf ≥ 0.85
-6. sanitize + account stabilize         → weak is_bot demoted
-```
+Thread region comes from the root post's topic (US or EU politics lexicon), and failing
+that from its author's country. The **My regions** setting exempts blocs from
+off-region weight.
 
-## Local gates (must stay tiny)
+## Tuning
 
-**A — Extreme farm profile**  
-`following ≥ 2500` AND `followers < 120` AND `ratio ≥ 30` AND known counts AND not verified.
-
-**B — New shell**  
-`age ≤ 45d` AND `following ≥ 1500` AND `followers < 80` AND `ratio ≥ 20` AND default avatar AND known counts.
-
-No local scoring of “gm”, “true”, “great post”, etc.
-
-## AI
-
-Short prompt, human-default. Soft `is_bot` with conf &lt; 0.85 → human (or mild slop only if clearly filler).
-
-## Account chip
-
-Same @user → same chip. Account is bot only with **strong** seed or **≥2 strong hits**. Humans win ties.
+Add a unit test in `test/score.test.ts` for any false positive before changing weights.
+Prefer adding a negative (trust) signal over raising thresholds.

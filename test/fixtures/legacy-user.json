@@ -1,0 +1,79 @@
+{
+  "data": {
+    "user": {
+      "result": {
+        "__typename": "User",
+        "id": "VXNlcjoxNTk5ODEyMzQ1Njc4OTAxMjQ4",
+        "rest_id": "1599812345678901248",
+        "affiliates_highlighted_label": {},
+        "business_account": {},
+        "creator_subscriptions_count": 0,
+        "has_graduated_access": true,
+        "has_hidden_subscriptions_on_profile": false,
+        "highlights_info": {
+          "can_highlight_tweets": false,
+          "highlighted_tweets": "0"
+        },
+        "is_blue_verified": false,
+        "is_profile_translatable": false,
+        "legacy": {
+          "can_dm": false,
+          "can_media_tag": true,
+          "created_at": "Wed Nov 30 09:12:44 +0000 2022",
+          "default_profile": true,
+          "default_profile_image": false,
+          "description": "Backend eng. Postgres, queues, and too much chai. Opinions mine.",
+          "entities": {
+            "description": {
+              "urls": []
+            },
+            "url": {
+              "urls": [
+                {
+                  "display_url": "priya.example.dev",
+                  "expanded_url": "https://priya.example.dev",
+                  "indices": [
+                    0,
+                    23
+                  ],
+                  "url": "https://t.co/Qx7pLm2VbA"
+                }
+              ]
+            }
+          },
+          "fast_followers_count": 0,
+          "favourites_count": 18320,
+          "followers_count": 3911,
+          "following": true,
+          "friends_count": 580,
+          "has_custom_timelines": false,
+          "is_translator": false,
+          "listed_count": 33,
+          "location": "Bengaluru, India",
+          "media_count": 301,
+          "name": "Priya Raman",
+          "normal_followers_count": 3911,
+          "pinned_tweet_ids_str": [],
+          "possibly_sensitive": false,
+          "profile_banner_url": "https://pbs.twimg.com/profile_banners/1599812345678901248/1726000000",
+          "profile_image_url_https": "https://pbs.twimg.com/profile_images/1834455667788990464/aB3dE5fG_normal.jpg",
+          "profile_interstitial_type": "",
+          "screen_name": "priya_codes",
+          "statuses_count": 7402,
+          "translator_type": "none",
+          "url": "https://t.co/Qx7pLm2VbA",
+          "verified": false,
+          "want_retweets": false,
+          "withheld_in_countries": []
+        },
+        "legacy_extended_profile": {},
+        "profile_image_shape": "Circle",
+        "tipjar_settings": {},
+        "verification_info": {
+          "is_identity_verified": false,
+          "reason": {}
+        }
+      }
+    }
+  }
+}

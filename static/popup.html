@@ -217,16 +217,32 @@
     .status:empty { display: none; }
 
     .toggles { display: flex; flex-direction: column; gap: 6px; }
+  
+    .seg { display: flex; gap: 2px; padding: 2px; border-radius: var(--radius-pill); background: var(--border); }
+    .seg button { flex: 1; padding: 5px 6px; border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer; }
+    .seg button[aria-pressed="true"] { background: var(--bg); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field-head { display: flex; justify-content: space-between; align-items: baseline; }
+    .chip[aria-pressed="true"] { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); }
+    details.list-group { border-radius: var(--radius); background: var(--bg-elevated); }
+    details.list-group summary { display: flex; justify-content: space-between; padding: 10px 12px; cursor: pointer; font-weight: 600; list-style: none; }
+    details.list-group summary::-webkit-details-marker { display: none; }
+    details.list-group summary .count { color: var(--muted); font-weight: 500; }
+    details.list-group .body { padding: 0 12px 10px; display: flex; flex-direction: column; gap: 6px; }
+    details.list-group .list-row { background: var(--bg); }
+    .footer { margin-top: 14px; display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 12px; }
+    .link { border: 0; background: none; color: var(--muted); cursor: pointer; text-decoration: underline; padding: 0; font-size: 12px; }
   </style>
 </head>
 <body>
   <header class="header">
     <h1 class="title">Spam Filter for X</h1>
-    <p class="subtitle">Hide bots, countries, and clutter</p>
+    <p class="subtitle">Hide bots, slop, countries, and clutter — all on this device</p>
   </header>
 
   <nav class="tabs" role="tablist" aria-label="Spam Filter settings">
     <button class="tab" id="tab-btn-filter" type="button" role="tab" aria-selected="true" aria-controls="tab-filter" data-tab="filter">Filter</button>
+    <button class="tab" id="tab-btn-lists" type="button" role="tab" aria-selected="false" aria-controls="tab-lists" data-tab="lists" tabindex="-1">Lists</button>
     <button class="tab" id="tab-btn-layout" type="button" role="tab" aria-selected="false" aria-controls="tab-layout" data-tab="layout" tabindex="-1">Layout</button>
   </nav>
 
@@ -234,40 +250,67 @@
     <div class="tab-panel active" id="tab-filter" role="tabpanel" aria-labelledby="tab-btn-filter">
       <div class="stack">
         <div class="hint" id="onboarding">
-          <p>Safari → x.com (not the X app) → allow this site.</p>
+          <p>Use x.com in Safari (not the X app) and allow this site. Tap any flag or badge on a post for one-tap mute, block, or hide.</p>
           <button class="icon-btn" id="onboarding-dismiss" type="button" aria-label="Dismiss">×</button>
         </div>
 
         <div class="row">
           <div class="row-copy">
-            <div class="row-label" id="bots-label">Hide farm accounts</div>
-            <div class="meta">People you follow stay</div>
+            <div class="row-label" id="enabled-label">Filtering on</div>
+            <div class="meta">People you follow are never scored</div>
           </div>
-          <button class="switch" id="bots-toggle" type="button" role="switch" aria-checked="true" aria-labelledby="bots-label"></button>
+          <button class="switch" id="enabled-toggle" type="button" role="switch" aria-checked="true" aria-labelledby="enabled-label"></button>
         </div>
 
-        <section>
-          <h2 class="section-label">Hidden countries</h2>
-          <div class="list" id="hidden-list"></div>
-          <div class="input-row">
-            <input class="input" id="country-input" type="text" autocomplete="off" placeholder="India, Nigeria…" aria-label="Country to hide">
-            <button class="btn" id="country-add" type="button">Hide</button>
+        <div class="field">
+          <div class="field-head"><span class="row-label">Farm accounts</span><span class="meta">bots, spam bait</span></div>
+          <div class="seg" role="group" aria-label="Farm accounts" data-setting="farmAction">
+            <button type="button" data-value="hide">Hide</button><button type="button" data-value="collapse">Collapse</button><button type="button" data-value="label">Label</button><button type="button" data-value="off">Off</button>
           </div>
-          <p class="status" id="country-status" aria-live="polite"></p>
-        </section>
+        </div>
 
-        <section id="quick-section" hidden>
-          <h2 class="section-label">Seen on your timeline</h2>
-          <div class="chips" id="quick-countries"></div>
-        </section>
+        <div class="field">
+          <div class="field-head"><span class="row-label">Low-quality replies</span><span class="meta">AI-style, generic, copy-paste</span></div>
+          <div class="seg" role="group" aria-label="Low-quality replies" data-setting="slopAction">
+            <button type="button" data-value="hide">Hide</button><button type="button" data-value="collapse">Collapse</button><button type="button" data-value="label">Label</button><button type="button" data-value="off">Off</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-head"><span class="row-label">Strictness</span></div>
+          <div class="seg" role="group" aria-label="Strictness" data-setting="sensitivity">
+            <button type="button" data-value="relaxed">Relaxed</button><button type="button" data-value="balanced">Balanced</button><button type="button" data-value="strict">Strict</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-head"><span class="row-label">My regions</span><span class="meta">never counted as off-region</span></div>
+          <div class="chips" id="home-blocs"></div>
+        </div>
 
         <div class="row">
           <div class="row-copy">
             <div class="row-label" id="flags-label">Show flags</div>
-            <div class="meta">Tap a flag on X to hide that country</div>
+            <div class="meta">Where X says the account is based</div>
           </div>
           <button class="switch" id="flags-toggle" type="button" role="switch" aria-checked="true" aria-labelledby="flags-label"></button>
         </div>
+
+        <section id="quick-section" hidden>
+          <h2 class="section-label">Seen on your timeline — tap to hide</h2>
+          <div class="chips" id="quick-countries"></div>
+        </section>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-lists" role="tabpanel" aria-labelledby="tab-btn-lists" hidden>
+      <div class="stack" id="lists"></div>
+      <div class="row" style="margin-top:12px">
+        <div class="row-copy">
+          <div class="row-label" id="mirror-label">Also mute/block on X</div>
+          <div class="meta">When you mute or block from a post</div>
+        </div>
+        <button class="switch" id="mirror-toggle" type="button" role="switch" aria-checked="false" aria-labelledby="mirror-label"></button>
       </div>
     </div>
 
@@ -278,56 +321,16 @@
           <button class="btn btn--ghost" id="calm-disable" type="button">Reset</button>
         </div>
         <p class="status" id="calm-status" aria-live="polite"></p>
-        <div class="toggles" id="focusToggles">
-          <div class="row">
-            <span class="row-label" id="focusForYouLabel">Hide For you</span>
-            <button type="button" class="switch" id="focusHideForYou" role="switch" aria-checked="false" aria-labelledby="focusForYouLabel" data-focus-key="hideForYouTab"></button>
-          </div>
-          <div class="row">
-            <span class="row-label" id="focusForceLabel">Always Following</span>
-            <button type="button" class="switch" id="focusForceFollowing" role="switch" aria-checked="false" aria-labelledby="focusForceLabel" data-focus-key="forceFollowing"></button>
-          </div>
-          <div class="row">
-            <span class="row-label" id="focusNewsLabel">Hide Explore</span>
-            <button type="button" class="switch" id="focusHideNews" role="switch" aria-checked="false" aria-labelledby="focusNewsLabel" data-focus-key="hideNewsExplore"></button>
-          </div>
-          <div class="row">
-            <span class="row-label" id="focusTrendsLabel">Hide Trends</span>
-            <button type="button" class="switch" id="focusHideTrends" role="switch" aria-checked="false" aria-labelledby="focusTrendsLabel" data-focus-key="hideTrends"></button>
-          </div>
-          <div class="row">
-            <span class="row-label" id="focusWtfLabel">Hide Who to follow</span>
-            <button type="button" class="switch" id="focusHideWtf" role="switch" aria-checked="false" aria-labelledby="focusWtfLabel" data-focus-key="hideWhoToFollow"></button>
-          </div>
-          <div class="row">
-            <span class="row-label" id="focusPromoLabel">Hide ads</span>
-            <button type="button" class="switch" id="focusHidePromo" role="switch" aria-checked="false" aria-labelledby="focusPromoLabel" data-focus-key="hidePromoted"></button>
-          </div>
-          <div class="row">
-            <span class="row-label" id="focusGrokLabel">Hide Grok</span>
-            <button type="button" class="switch" id="focusHideGrok" role="switch" aria-checked="false" aria-labelledby="focusGrokLabel" data-focus-key="hideGrokNav"></button>
-          </div>
-          <div class="row">
-            <span class="row-label" id="focusCommLabel">Hide Communities</span>
-            <button type="button" class="switch" id="focusHideComm" role="switch" aria-checked="false" aria-labelledby="focusCommLabel" data-focus-key="hideCommunitiesNav"></button>
-          </div>
-          <div class="row">
-            <span class="row-label" id="focusPremLabel">Hide Premium upsells</span>
-            <button type="button" class="switch" id="focusHidePrem" role="switch" aria-checked="false" aria-labelledby="focusPremLabel" data-focus-key="hidePremiumUpsells"></button>
-          </div>
-          <div class="row">
-            <span class="row-label" id="focusTopicsLabel">Hide Topics / Spaces</span>
-            <button type="button" class="switch" id="focusHideTopics" role="switch" aria-checked="false" aria-labelledby="focusTopicsLabel" data-focus-key="hideTopicsSpaces"></button>
-          </div>
-        </div>
+        <div class="toggles" id="focus-toggles"></div>
       </div>
     </div>
   </main>
 
-  <script src="popupStub.js"></script>
-  <script src="countryFlags.js"></script>
-  <script src="countryFilter.js"></script>
-  <script src="focusMode.js"></script>
+  <footer class="footer">
+    <span id="footer-stats"></span>
+    <button class="link" id="clear-cache" type="button">Clear cached locations</button>
+  </footer>
+
   <script src="popup.js"></script>
 </body>
 </html>

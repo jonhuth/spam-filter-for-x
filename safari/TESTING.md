@@ -9,7 +9,7 @@ Product surface is iOS Safari. Test on `https://x.com` in Safari, not in the nat
 - iPhone or iPad on iOS 16 or newer, or an iOS Simulator
 - Logged-in x.com session in Safari
 
-Linux agents can edit and verify `extension/`, but cannot run the Safari converter, sign builds, upload TestFlight builds, or submit to the App Store.
+Linux agents can edit and verify `src/` (bun run check), but cannot run the Safari converter, sign builds, upload TestFlight builds, or submit to the App Store.
 
 ## Convert and build
 
@@ -70,8 +70,7 @@ On the device, open **Settings → Apps → Safari → Extensions**, enable Spam
 Before conversion, run:
 
 ```bash
-rg -n 'railway|anthropic|x-bot-detector' \
-  extension/manifest.json extension/popup.html extension/popup.js extension/countryFilter.js
+bun run build && bun run check:no-backend
 ```
 
 Expect no matches. In Safari Web Inspector, confirm Spam Filter for X traffic stays on x.com/twitter.com. Location comes from X's `AboutAccountQuery` through the user's current page session.

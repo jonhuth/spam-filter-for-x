@@ -9,7 +9,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-EXT_DIR="${ROOT}/extension"
+EXT_DIR="${ROOT}/dist"
 OUT_DIR="${ROOT}/safari/Xcode"
 APP_NAME="${APP_NAME:-Spam Filter for X}"
 BUNDLE_ID="${BUNDLE_ID:-com.aevum.spamfilter}"
@@ -49,6 +49,8 @@ if ! xcrun --find safari-web-extension-converter >/dev/null 2>&1; then
   echo "Install/select full Xcode, then: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer" >&2
   exit 1
 fi
+
+(cd "${ROOT}" && bun install --frozen-lockfile >/dev/null && bun run build) || { echo "error: build failed" >&2; exit 1; }
 
 if [[ ! -f "${EXT_DIR}/manifest.json" ]]; then
   echo "error: missing ${EXT_DIR}/manifest.json" >&2
