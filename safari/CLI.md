@@ -19,7 +19,7 @@
 | TestFlight upload | `xcrun notarytool` / Transporter / ASC API | ASC web for metadata |
 | App Store listing / review | no | yes |
 
-Chrome remains the fully hands-off loop: load unpacked `extension/` on any machine.
+Chrome remains the fully hands-off loop: `bun run build`, then load unpacked `dist/` on any machine.
 
 ## Full Xcode required (not Command Line Tools)
 
@@ -73,7 +73,7 @@ macOS desktop:
 JS-only iteration after project exists (typical day-to-day):
 
 ```bash
-# After editing extension/*.js only — skip convert, rebuild, reinstall sim
+# After editing src/ only (bun run build) — skip convert, rebuild, reinstall sim
 git pull   # or rsync/scp your branch onto the Mac
 SKIP_CONVERT=1 ./safari/build.sh ios-sim
 SKIP_CONVERT=1 ./safari/run-sim.sh
@@ -119,7 +119,7 @@ First cable: Trust Computer + enable Developer Mode on device (GUI). After that,
 
 | Do | Don’t |
 |----|--------|
-| Edit `extension/*`, commit, push | Run convert/xcodebuild |
+| Edit `src/`, commit, push | Run convert/xcodebuild |
 | Keep `safari/*.sh` + CLI.md current | Invent unsigned App Store shortcuts |
 | SSH/Tailscale to Mac and run scripts there | Assume Simulator exists on Linux |
 

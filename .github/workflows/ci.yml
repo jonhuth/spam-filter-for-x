@@ -1,7 +1,6 @@
 name: CI
 
 # CI economics: PR as the independent proof — no duplicate post-merge push run.
-# See ai/shared/AGENTS.md → "CI economics" and projects/templates/github-workflows.
 on:
   pull_request:
     branches: [master, main]
@@ -15,28 +14,12 @@ permissions:
   contents: read
 
 jobs:
-  validate:
-    name: Validate
+  check:
+    name: Typecheck, lint, test, build
     runs-on: ubuntu-slim
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
-
-      - name: Validate extension/manifest.json
-        run: |
-          echo "Validating extension/manifest.json..."
-          jq empty extension/manifest.json
-          echo "✓ extension/manifest.json is valid JSON"
-
-      - name: Check JS syntax
-        run: |
-          echo "Checking JavaScript syntax in extension/..."
-          for f in extension/*.js; do
-            node --check "$f" && echo "✓ $f"
-          done
-
-      - name: Check required icons
-        run: |
-          for size in 16 32 48 128; do
-            test -f "extension/icons/icon${size}.png" && echo "✓ icon${size}.png"
-          done
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run check

@@ -1,3 +1,4 @@
+// @ts-nocheck — ported verbatim from v3; typed rewrite later.
 // Focus / declutter — hide noisy X chrome, optional force Following
 // Settings: chrome.storage.local focus_declutter
 // Applied via CSS classes on <html> + light JS (tab labeling, force Following)
@@ -434,7 +435,7 @@ async function initFocusMode() {
 	}
 }
 
-const FocusMode = {
+export const FocusMode = {
 	FOCUS_KEY,
 	DEFAULT_FOCUS,
 	loadFocusState,
@@ -445,9 +446,3 @@ const FocusMode = {
 	anyFocusEnabled,
 };
 
-if (typeof window !== "undefined") {
-	window.FocusMode = FocusMode;
-}
-if (typeof globalThis !== "undefined") {
-	globalThis.FocusMode = FocusMode;
-}

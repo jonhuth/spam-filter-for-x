@@ -1,6 +1,6 @@
 # Safari packaging
 
-Shared WebExtension sources live in [`../extension/`](../extension/). This folder holds Mac-only packaging for the **Safari Web Extension** app shell (App Store / TestFlight / device install).
+Shared WebExtension sources live in [`../src/`](../src/) and build to `../dist/`. This folder holds Mac-only packaging for the **Safari Web Extension** app shell (App Store / TestFlight / device install).
 
 ## Quick path
 
@@ -27,5 +27,5 @@ safari/
 ## Product intent
 
 - **Safari = product** (paid niche, mobile Safari where Chrome extensions don’t exist)
-- **Chrome = R&D** (`chrome://extensions` → Load unpacked → `extension/`)
+- **Chrome = R&D** (`chrome://extensions` → `bun run build` → Load unpacked → `dist/`)
 - v1: **hide farms, hide spam countries, persist chrome** on iOS Safari. X in the browser, not the app. No backend.

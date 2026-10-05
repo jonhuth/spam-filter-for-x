@@ -1,0 +1,25 @@
+{
+	"name": "spam-filter-for-x",
+	"version": "4.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"build": "bun scripts/build.ts",
+		"watch": "bun scripts/build.ts --watch",
+		"test": "bun test",
+		"typecheck": "tsc --noEmit",
+		"lint": "biome check src test scripts e2e",
+		"check": "bun run typecheck && bun run lint && bun test && bun run build && bun run check:no-backend",
+		"check:no-backend": "bun scripts/check-no-backend.ts",
+		"e2e": "bun run build && bun e2e/run.ts"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2",
+		"@happy-dom/global-registrator": "^20.14.5",
+		"@types/bun": "^1.4.2",
+		"@types/chrome": "^0.3.4",
+		"happy-dom": "^20.14.5",
+		"playwright": "^1.63.0",
+		"typescript": "^7.0.2"
+	}
+}

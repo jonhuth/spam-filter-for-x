@@ -1,0 +1,982 @@
+{
+  "data": {
+    "home": {
+      "home_timeline_urt": {
+        "instructions": [
+          {
+            "type": "TimelineAddEntries",
+            "entries": [
+              {
+                "entryId": "tweet-2104572631185227899",
+                "sortIndex": "2104610000000000000",
+                "content": {
+                  "entryType": "TimelineTimelineItem",
+                  "__typename": "TimelineTimelineItem",
+                  "itemContent": {
+                    "__typename": "TimelineTweet",
+                    "itemType": "TimelineTweet",
+                    "tweet_results": {
+                      "result": {
+                        "__typename": "Tweet",
+                        "rest_id": "2104572631185227899",
+                        "core": {
+                          "user_results": {
+                            "result": {
+                              "__typename": "User",
+                              "id": "VXNlcjoxNTk5ODEyMzQ1Njc4OTAxMjQ4",
+                              "rest_id": "1599812345678901248",
+                              "action_counts": {
+                                "favorites_count": 22410
+                              },
+                              "affiliates_highlighted_label": {},
+                              "avatar": {
+                                "image_url": "https://pbs.twimg.com/profile_images/1834455667788990464/aB3dE5fG_normal.jpg"
+                              },
+                              "banner": {
+                                "image_url": "https://pbs.twimg.com/profile_banners/1599812345678901248/1726000000"
+                              },
+                              "core": {
+                                "created_at": "Wed Nov 30 09:12:44 +0000 2022",
+                                "name": "Priya Raman",
+                                "screen_name": "priya_codes"
+                              },
+                              "dm_permissions": {
+                                "can_dm": false
+                              },
+                              "follow_request_sent": false,
+                              "has_graduated_access": true,
+                              "is_blue_verified": false,
+                              "location": {
+                                "location": "Bengaluru, India"
+                              },
+                              "media_permissions": {
+                                "can_media_tag": true
+                              },
+                              "notifications_settings": {
+                                "notifications_enabled": false
+                              },
+                              "pinned_items": {
+                                "tweet_ids_str": []
+                              },
+                              "possibly_sensitive": false,
+                              "privacy": {
+                                "protected": false
+                              },
+                              "profile_bio": {
+                                "description": "Backend eng. Postgres, queues, and too much chai. Opinions mine.",
+                                "entities": {
+                                  "description": {
+                                    "urls": []
+                                  },
+                                  "url": {
+                                    "urls": [
+                                      {
+                                        "display_url": "priya.example.dev",
+                                        "expanded_url": "https://priya.example.dev",
+                                        "indices": [
+                                          0,
+                                          23
+                                        ],
+                                        "url": "https://t.co/Qx7pLm2VbA"
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              "profile_description_language": "en",
+                              "profile_image_shape": "Circle",
+                              "profile_metadata": {
+                                "profile_interstitial_type": ""
+                              },
+                              "profile_translation": {
+                                "translator_type": "none"
+                              },
+                              "relationship_counts": {
+                                "followers": 4821,
+                                "following": 612
+                              },
+                              "relationship_perspectives": {
+                                "blocked_by": false,
+                                "blocking": false,
+                                "followed_by": false,
+                                "following": true,
+                                "live_following": false,
+                                "muting": false
+                              },
+                              "super_follow_eligible": false,
+                              "super_followed_by": false,
+                              "super_following": false,
+                              "tipjar_settings": {},
+                              "tweet_counts": {
+                                "media_tweets": 388,
+                                "tweets": 9133
+                              },
+                              "verification": {
+                                "verified": false
+                              },
+                              "website": {
+                                "url": "https://priya.example.dev"
+                              }
+                            }
+                          }
+                        },
+                        "edit_control": {
+                          "edit_tweet_ids": [
+                            "2104572631185227899"
+                          ],
+                          "editable_until_msecs": "1790000000000",
+                          "edits_remaining": "5",
+                          "is_edit_eligible": true
+                        },
+                        "grok_translated_post_with_availability": {
+                          "is_available": false
+                        },
+                        "has_birdwatch_notes": false,
+                        "is_translatable": false,
+                        "legacy": {
+                          "bookmark_count": 57,
+                          "bookmarked": false,
+                          "conversation_id_str": "2104572631185227899",
+                          "created_at": "Mon Sep 28 14:03:11 +0000 2026",
+                          "display_text_range": [
+                            0,
+                            136
+                          ],
+                          "entities": {
+                            "hashtags": [],
+                            "symbols": [],
+                            "timestamps": [],
+                            "urls": [],
+                            "user_mentions": []
+                          },
+                          "favorite_count": 211,
+                          "favorited": false,
+                          "full_text": "Hot take: most \"slow database\" incidents I've debugged were missing indexes on foreign keys. Check pg_stat_user_tables before you shard.",
+                          "id_str": "2104572631185227899",
+                          "is_quote_status": false,
+                          "lang": "en",
+                          "quote_count": 3,
+                          "reply_count": 2,
+                          "retweet_count": 14,
+                          "retweeted": false,
+                          "user_id_str": "1599812345678901248"
+                        },
+                        "quick_promote_eligibility": {
+                          "eligibility": "IneligibleNotProfessional"
+                        },
+                        "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+                        "unmention_data": {},
+                        "views": {
+                          "count": "18342",
+                          "state": "EnabledWithCount"
+                        }
+                      }
+                    },
+                    "tweetDisplayType": "Tweet"
+                  },
+                  "feedbackInfo": {
+                    "feedbackKeys": [
+                      "1129392104"
+                    ]
+                  },
+                  "clientEventInfo": {
+                    "component": "following_in_network",
+                    "element": "tweet",
+                    "details": {
+                      "timelinesDetails": {
+                        "injectionType": "FollowingInNetwork",
+                        "controllerData": "DAACDAABDAABCgABAAAAAAAAAAAKAAkAAAAAAAAAAAAKAAoAAAGSHdLwqAAAAAA="
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "entryId": "promoted-tweet-2104318032738123899-1f3a9c7e2b4d6a80",
+                "sortIndex": "2104609999999999999",
+                "content": {
+                  "entryType": "TimelineTimelineItem",
+                  "__typename": "TimelineTimelineItem",
+                  "itemContent": {
+                    "__typename": "TimelineTweet",
+                    "itemType": "TimelineTweet",
+                    "tweet_results": {
+                      "result": {
+                        "__typename": "Tweet",
+                        "rest_id": "2104318032738123899",
+                        "core": {
+                          "user_results": {
+                            "result": {
+                              "__typename": "User",
+                              "id": "VXNlcjoxNDIzMzc3MDAxMjM0NTY3MTY4",
+                              "rest_id": "1423377001234567168",
+                              "action_counts": {
+                                "favorites_count": 330
+                              },
+                              "affiliates_highlighted_label": {},
+                              "avatar": {
+                                "image_url": "https://pbs.twimg.com/profile_images/1700000000000000000/AcMeLoGo_normal.png"
+                              },
+                              "core": {
+                                "created_at": "Mon Aug 09 17:40:02 +0000 2021",
+                                "name": "Acme Cloud",
+                                "screen_name": "acme_cloud"
+                              },
+                              "dm_permissions": {
+                                "can_dm": false
+                              },
+                              "follow_request_sent": false,
+                              "has_graduated_access": true,
+                              "is_blue_verified": true,
+                              "location": {
+                                "location": "San Francisco, CA"
+                              },
+                              "media_permissions": {
+                                "can_media_tag": true
+                              },
+                              "notifications_settings": {
+                                "notifications_enabled": false
+                              },
+                              "pinned_items": {
+                                "tweet_ids_str": []
+                              },
+                              "possibly_sensitive": false,
+                              "privacy": {
+                                "protected": false
+                              },
+                              "professional": {
+                                "rest_id": "1500000000000000001",
+                                "professional_type": "Business",
+                                "category": [
+                                  {
+                                    "id": 713,
+                                    "name": "Software Company",
+                                    "icon_name": "IconBriefcaseStroke"
+                                  }
+                                ]
+                              },
+                              "profile_bio": {
+                                "description": "Deploy anywhere in seconds. Status: @acme_status",
+                                "entities": {
+                                  "description": {
+                                    "urls": []
+                                  },
+                                  "url": {
+                                    "urls": [
+                                      {
+                                        "display_url": "acme.example.com",
+                                        "expanded_url": "https://acme.example.com",
+                                        "indices": [
+                                          0,
+                                          23
+                                        ],
+                                        "url": "https://t.co/Qx7pLm2VbA"
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              "profile_description_language": "en",
+                              "profile_image_shape": "Square",
+                              "profile_metadata": {
+                                "profile_interstitial_type": ""
+                              },
+                              "profile_translation": {
+                                "translator_type": "none"
+                              },
+                              "relationship_counts": {
+                                "followers": 128450,
+                                "following": 210
+                              },
+                              "relationship_perspectives": {
+                                "blocked_by": false,
+                                "blocking": false,
+                                "followed_by": false,
+                                "following": false,
+                                "live_following": false,
+                                "muting": false
+                              },
+                              "super_follow_eligible": false,
+                              "super_followed_by": false,
+                              "super_following": false,
+                              "tipjar_settings": {},
+                              "tweet_counts": {
+                                "media_tweets": 1801,
+                                "tweets": 5402
+                              },
+                              "verification": {
+                                "verified": false,
+                                "verified_type": "Business"
+                              },
+                              "website": {
+                                "url": "https://acme.example.com"
+                              }
+                            }
+                          }
+                        },
+                        "edit_control": {
+                          "edit_tweet_ids": [
+                            "2104318032738123899"
+                          ],
+                          "editable_until_msecs": "1790000000000",
+                          "edits_remaining": "5",
+                          "is_edit_eligible": true
+                        },
+                        "grok_translated_post_with_availability": {
+                          "is_available": false
+                        },
+                        "has_birdwatch_notes": false,
+                        "is_translatable": false,
+                        "legacy": {
+                          "bookmark_count": 120,
+                          "bookmarked": false,
+                          "conversation_id_str": "2104318032738123899",
+                          "created_at": "Sun Sep 27 21:11:30 +0000 2026",
+                          "display_text_range": [
+                            0,
+                            82
+                          ],
+                          "entities": {
+                            "hashtags": [],
+                            "symbols": [],
+                            "timestamps": [],
+                            "user_mentions": [],
+                            "urls": [
+                              {
+                                "display_url": "acme.example.com/free",
+                                "expanded_url": "https://acme.example.com/free",
+                                "indices": [
+                                  62,
+                                  85
+                                ],
+                                "url": "https://t.co/Ab12Cd34Ef"
+                              }
+                            ]
+                          },
+                          "favorite_count": 902,
+                          "favorited": false,
+                          "full_text": "Ship your side project tonight. Free tier, no credit card. https://t.co/Ab12Cd34Ef",
+                          "id_str": "2104318032738123899",
+                          "is_quote_status": false,
+                          "lang": "en",
+                          "quote_count": 7,
+                          "reply_count": 41,
+                          "retweet_count": 18,
+                          "retweeted": false,
+                          "user_id_str": "1423377001234567168"
+                        },
+                        "quick_promote_eligibility": {
+                          "eligibility": "IneligibleNotProfessional"
+                        },
+                        "source": "<a href=\"https://ads-api.x.com\" rel=\"nofollow\">advertiser-interface</a>",
+                        "unmention_data": {},
+                        "views": {
+                          "count": "2211843",
+                          "state": "EnabledWithCount"
+                        }
+                      }
+                    },
+                    "tweetDisplayType": "Tweet",
+                    "promotedMetadata": {
+                      "advertiser_results": {
+                        "result": {
+                          "__typename": "User",
+                          "id": "VXNlcjoxNDIzMzc3MDAxMjM0NTY3MTY4",
+                          "rest_id": "1423377001234567168",
+                          "action_counts": {
+                            "favorites_count": 330
+                          },
+                          "affiliates_highlighted_label": {},
+                          "avatar": {
+                            "image_url": "https://pbs.twimg.com/profile_images/1700000000000000000/AcMeLoGo_normal.png"
+                          },
+                          "core": {
+                            "created_at": "Mon Aug 09 17:40:02 +0000 2021",
+                            "name": "Acme Cloud",
+                            "screen_name": "acme_cloud"
+                          },
+                          "dm_permissions": {
+                            "can_dm": false
+                          },
+                          "follow_request_sent": false,
+                          "has_graduated_access": true,
+                          "is_blue_verified": true,
+                          "location": {
+                            "location": "San Francisco, CA"
+                          },
+                          "media_permissions": {
+                            "can_media_tag": true
+                          },
+                          "notifications_settings": {
+                            "notifications_enabled": false
+                          },
+                          "pinned_items": {
+                            "tweet_ids_str": []
+                          },
+                          "possibly_sensitive": false,
+                          "privacy": {
+                            "protected": false
+                          },
+                          "professional": {
+                            "rest_id": "1500000000000000001",
+                            "professional_type": "Business",
+                            "category": [
+                              {
+                                "id": 713,
+                                "name": "Software Company",
+                                "icon_name": "IconBriefcaseStroke"
+                              }
+                            ]
+                          },
+                          "profile_bio": {
+                            "description": "Deploy anywhere in seconds. Status: @acme_status",
+                            "entities": {
+                              "description": {
+                                "urls": []
+                              },
+                              "url": {
+                                "urls": [
+                                  {
+                                    "display_url": "acme.example.com",
+                                    "expanded_url": "https://acme.example.com",
+                                    "indices": [
+                                      0,
+                                      23
+                                    ],
+                                    "url": "https://t.co/Qx7pLm2VbA"
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          "profile_description_language": "en",
+                          "profile_image_shape": "Square",
+                          "profile_metadata": {
+                            "profile_interstitial_type": ""
+                          },
+                          "profile_translation": {
+                            "translator_type": "none"
+                          },
+                          "relationship_counts": {
+                            "followers": 128450,
+                            "following": 210
+                          },
+                          "relationship_perspectives": {
+                            "blocked_by": false,
+                            "blocking": false,
+                            "followed_by": false,
+                            "following": false,
+                            "live_following": false,
+                            "muting": false
+                          },
+                          "super_follow_eligible": false,
+                          "super_followed_by": false,
+                          "super_following": false,
+                          "tipjar_settings": {},
+                          "tweet_counts": {
+                            "media_tweets": 1801,
+                            "tweets": 5402
+                          },
+                          "verification": {
+                            "verified": false,
+                            "verified_type": "Business"
+                          },
+                          "website": {
+                            "url": "https://acme.example.com"
+                          }
+                        }
+                      },
+                      "adMetadataContainer": {
+                        "renderLegacyWebsiteCard": false
+                      },
+                      "disclosureType": "NoDisclosure",
+                      "experimentValues": [],
+                      "impressionId": "1f3a9c7e2b4d6a80",
+                      "impressionString": "1f3a9c7e2b4d6a80",
+                      "clickTrackingInfo": {
+                        "urlParams": [
+                          {
+                            "key": "twclid",
+                            "value": "2-7q9xk3m1p0zr8w4v6n2c5b"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "clientEventInfo": {
+                    "component": "promoted",
+                    "element": "tweet",
+                    "details": {
+                      "timelinesDetails": {
+                        "controllerData": "DAACDAABDAABCgABAAAAAAAAAAAKAAkAAAAAAAAAAAAKAAoAAAGSHdLwqAAAAAA="
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "entryId": "home-conversation-2104592151476043899",
+                "sortIndex": "2104609999999999998",
+                "content": {
+                  "entryType": "TimelineTimelineModule",
+                  "__typename": "TimelineTimelineModule",
+                  "displayType": "VerticalConversation",
+                  "items": [
+                    {
+                      "entryId": "home-conversation-2104592151476043899-tweet-2104572631185227899",
+                      "item": {
+                        "itemContent": {
+                          "__typename": "TimelineTweet",
+                          "itemType": "TimelineTweet",
+                          "tweet_results": {
+                            "result": {
+                              "__typename": "Tweet",
+                              "rest_id": "2104572631185227899",
+                              "core": {
+                                "user_results": {
+                                  "result": {
+                                    "__typename": "User",
+                                    "id": "VXNlcjoxNTk5ODEyMzQ1Njc4OTAxMjQ4",
+                                    "rest_id": "1599812345678901248",
+                                    "action_counts": {
+                                      "favorites_count": 22410
+                                    },
+                                    "affiliates_highlighted_label": {},
+                                    "avatar": {
+                                      "image_url": "https://pbs.twimg.com/profile_images/1834455667788990464/aB3dE5fG_normal.jpg"
+                                    },
+                                    "banner": {
+                                      "image_url": "https://pbs.twimg.com/profile_banners/1599812345678901248/1726000000"
+                                    },
+                                    "core": {
+                                      "created_at": "Wed Nov 30 09:12:44 +0000 2022",
+                                      "name": "Priya Raman",
+                                      "screen_name": "priya_codes"
+                                    },
+                                    "dm_permissions": {
+                                      "can_dm": false
+                                    },
+                                    "follow_request_sent": false,
+                                    "has_graduated_access": true,
+                                    "is_blue_verified": false,
+                                    "location": {
+                                      "location": "Bengaluru, India"
+                                    },
+                                    "media_permissions": {
+                                      "can_media_tag": true
+                                    },
+                                    "notifications_settings": {
+                                      "notifications_enabled": false
+                                    },
+                                    "pinned_items": {
+                                      "tweet_ids_str": []
+                                    },
+                                    "possibly_sensitive": false,
+                                    "privacy": {
+                                      "protected": false
+                                    },
+                                    "profile_bio": {
+                                      "description": "Backend eng. Postgres, queues, and too much chai. Opinions mine.",
+                                      "entities": {
+                                        "description": {
+                                          "urls": []
+                                        },
+                                        "url": {
+                                          "urls": [
+                                            {
+                                              "display_url": "priya.example.dev",
+                                              "expanded_url": "https://priya.example.dev",
+                                              "indices": [
+                                                0,
+                                                23
+                                              ],
+                                              "url": "https://t.co/Qx7pLm2VbA"
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    },
+                                    "profile_description_language": "en",
+                                    "profile_image_shape": "Circle",
+                                    "profile_metadata": {
+                                      "profile_interstitial_type": ""
+                                    },
+                                    "profile_translation": {
+                                      "translator_type": "none"
+                                    },
+                                    "relationship_counts": {
+                                      "followers": 4821,
+                                      "following": 612
+                                    },
+                                    "relationship_perspectives": {
+                                      "blocked_by": false,
+                                      "blocking": false,
+                                      "followed_by": false,
+                                      "following": true,
+                                      "live_following": false,
+                                      "muting": false
+                                    },
+                                    "super_follow_eligible": false,
+                                    "super_followed_by": false,
+                                    "super_following": false,
+                                    "tipjar_settings": {},
+                                    "tweet_counts": {
+                                      "media_tweets": 388,
+                                      "tweets": 9133
+                                    },
+                                    "verification": {
+                                      "verified": false
+                                    },
+                                    "website": {
+                                      "url": "https://priya.example.dev"
+                                    }
+                                  }
+                                }
+                              },
+                              "edit_control": {
+                                "edit_tweet_ids": [
+                                  "2104572631185227899"
+                                ],
+                                "editable_until_msecs": "1790000000000",
+                                "edits_remaining": "5",
+                                "is_edit_eligible": true
+                              },
+                              "grok_translated_post_with_availability": {
+                                "is_available": false
+                              },
+                              "has_birdwatch_notes": false,
+                              "is_translatable": false,
+                              "legacy": {
+                                "bookmark_count": 57,
+                                "bookmarked": false,
+                                "conversation_id_str": "2104572631185227899",
+                                "created_at": "Mon Sep 28 14:03:11 +0000 2026",
+                                "display_text_range": [
+                                  0,
+                                  136
+                                ],
+                                "entities": {
+                                  "hashtags": [],
+                                  "symbols": [],
+                                  "timestamps": [],
+                                  "urls": [],
+                                  "user_mentions": []
+                                },
+                                "favorite_count": 211,
+                                "favorited": false,
+                                "full_text": "Hot take: most \"slow database\" incidents I've debugged were missing indexes on foreign keys. Check pg_stat_user_tables before you shard.",
+                                "id_str": "2104572631185227899",
+                                "is_quote_status": false,
+                                "lang": "en",
+                                "quote_count": 3,
+                                "reply_count": 2,
+                                "retweet_count": 14,
+                                "retweeted": false,
+                                "user_id_str": "1599812345678901248"
+                              },
+                              "quick_promote_eligibility": {
+                                "eligibility": "IneligibleNotProfessional"
+                              },
+                              "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+                              "unmention_data": {},
+                              "views": {
+                                "count": "18342",
+                                "state": "EnabledWithCount"
+                              }
+                            }
+                          },
+                          "tweetDisplayType": "Tweet"
+                        },
+                        "clientEventInfo": {
+                          "component": "suggest_ranked_organic_tweet",
+                          "element": "tweet",
+                          "details": {
+                            "timelinesDetails": {
+                              "injectionType": "RankedOrganicTweet",
+                              "controllerData": "DAACDAABDAABCgABAAAAAAAAAAAKAAkAAAAAAAAAAAAKAAoAAAGSHdLwqAAAAAA="
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "entryId": "home-conversation-2104592151476043899-tweet-2104592151476043899",
+                      "item": {
+                        "itemContent": {
+                          "__typename": "TimelineTweet",
+                          "itemType": "TimelineTweet",
+                          "tweet_results": {
+                            "result": {
+                              "__typename": "TweetWithVisibilityResults",
+                              "tweet": {
+                                "rest_id": "2104592151476043899",
+                                "core": {
+                                  "user_results": {
+                                    "result": {
+                                      "__typename": "User",
+                                      "id": "VXNlcjoxODc2NTQzMjEwOTg3NjU0MzIx",
+                                      "rest_id": "1876543210987654321",
+                                      "action_counts": {
+                                        "favorites_count": 12
+                                      },
+                                      "affiliates_highlighted_label": {},
+                                      "avatar": {
+                                        "image_url": "https://pbs.twimg.com/profile_images/1879000111222333444/Zz9yXw8V_normal.jpg"
+                                      },
+                                      "core": {
+                                        "created_at": "Tue Jan 14 03:21:09 +0000 2025",
+                                        "name": "Crypto Gains 🚀💰",
+                                        "screen_name": "crypto_gains_2026"
+                                      },
+                                      "dm_permissions": {
+                                        "can_dm": false
+                                      },
+                                      "follow_request_sent": false,
+                                      "has_graduated_access": true,
+                                      "is_blue_verified": true,
+                                      "location": {
+                                        "location": "DM for collab 📩"
+                                      },
+                                      "media_permissions": {
+                                        "can_media_tag": true
+                                      },
+                                      "notifications_settings": {
+                                        "notifications_enabled": false
+                                      },
+                                      "pinned_items": {
+                                        "tweet_ids_str": []
+                                      },
+                                      "possibly_sensitive": false,
+                                      "privacy": {
+                                        "protected": false
+                                      },
+                                      "profile_bio": {
+                                        "description": "💎 100x gems daily | Not financial advice | Link below 👇",
+                                        "entities": {
+                                          "description": {
+                                            "urls": []
+                                          }
+                                        }
+                                      },
+                                      "profile_description_language": "en",
+                                      "profile_image_shape": "Circle",
+                                      "profile_metadata": {
+                                        "profile_interstitial_type": ""
+                                      },
+                                      "profile_translation": {
+                                        "translator_type": "none"
+                                      },
+                                      "relationship_counts": {
+                                        "followers": 73,
+                                        "following": 4987
+                                      },
+                                      "relationship_perspectives": {
+                                        "blocked_by": false,
+                                        "blocking": false,
+                                        "followed_by": false,
+                                        "following": false,
+                                        "live_following": false,
+                                        "muting": false
+                                      },
+                                      "super_follow_eligible": false,
+                                      "super_followed_by": false,
+                                      "super_following": false,
+                                      "tipjar_settings": {},
+                                      "tweet_counts": {
+                                        "media_tweets": 9,
+                                        "tweets": 31544
+                                      },
+                                      "verification": {
+                                        "verified": false
+                                      },
+                                      "website": {}
+                                    }
+                                  }
+                                },
+                                "edit_control": {
+                                  "edit_tweet_ids": [
+                                    "2104592151476043899"
+                                  ],
+                                  "editable_until_msecs": "1790000000000",
+                                  "edits_remaining": "5",
+                                  "is_edit_eligible": true
+                                },
+                                "grok_translated_post_with_availability": {
+                                  "is_available": false
+                                },
+                                "has_birdwatch_notes": false,
+                                "is_translatable": false,
+                                "legacy": {
+                                  "bookmark_count": 0,
+                                  "bookmarked": false,
+                                  "conversation_id_str": "2104572631185227899",
+                                  "created_at": "Mon Sep 28 15:20:45 +0000 2026",
+                                  "display_text_range": [
+                                    13,
+                                    276
+                                  ],
+                                  "entities": {
+                                    "hashtags": [],
+                                    "symbols": [],
+                                    "timestamps": [],
+                                    "urls": [],
+                                    "user_mentions": [
+                                      {
+                                        "id_str": "1599812345678901248",
+                                        "name": "Priya Raman",
+                                        "screen_name": "priya_codes",
+                                        "indices": [
+                                          0,
+                                          12
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  "favorite_count": 1,
+                                  "favorited": false,
+                                  "full_text": "@priya_codes This is so true 🔥🔥 I made 40x last month with one simple trick that the banks don't want you to know. Most people ignore this until it's too late. Check my pinned post and DM me \"GAINS\" for the free guide 👇👇 Only 20 spots left this week!! Serious people only, no…",
+                                  "id_str": "2104592151476043899",
+                                  "in_reply_to_screen_name": "priya_codes",
+                                  "in_reply_to_status_id_str": "2104572631185227899",
+                                  "in_reply_to_user_id_str": "1599812345678901248",
+                                  "is_quote_status": false,
+                                  "lang": "en",
+                                  "quote_count": 0,
+                                  "reply_count": 0,
+                                  "retweet_count": 0,
+                                  "retweeted": false,
+                                  "user_id_str": "1876543210987654321"
+                                },
+                                "quick_promote_eligibility": {
+                                  "eligibility": "IneligibleNotProfessional"
+                                },
+                                "source": "<a href=\"http://twitter.com/download/android\" rel=\"nofollow\">Twitter for Android</a>",
+                                "unmention_data": {},
+                                "views": {
+                                  "count": "96",
+                                  "state": "EnabledWithCount"
+                                },
+                                "note_tweet": {
+                                  "is_expandable": true,
+                                  "note_tweet_results": {
+                                    "result": {
+                                      "id": "Tm90ZVR3ZWV0UmVzdWx0czoyMTA0NTkyMTUxNDc2MDQzODk5",
+                                      "text": "@priya_codes This is so true 🔥🔥 I made 40x last month with one simple trick that the banks don't want you to know. Most people ignore this until it's too late. Check my pinned post and DM me \"GAINS\" for the free guide 👇👇 Only 20 spots left this week!! Serious people only, no time wasters. Results speak for themselves, check the screenshots on my profile and see you on the other side.",
+                                      "entity_set": {
+                                        "hashtags": [],
+                                        "symbols": [],
+                                        "timestamps": [],
+                                        "urls": [],
+                                        "user_mentions": [
+                                          {
+                                            "id_str": "1599812345678901248",
+                                            "name": "Priya Raman",
+                                            "screen_name": "priya_codes",
+                                            "indices": [
+                                              0,
+                                              12
+                                            ]
+                                          }
+                                        ]
+                                      },
+                                      "richtext": {
+                                        "richtext_tags": []
+                                      },
+                                      "media": {
+                                        "inline_media": []
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              "limitedActionResults": {
+                                "limited_actions": [
+                                  {
+                                    "action": "Reply",
+                                    "prompt": {
+                                      "__typename": "CtaLimitedActionPrompt",
+                                      "cta_type": "SeeConversation",
+                                      "headline": {
+                                        "text": "Who can reply?",
+                                        "entities": []
+                                      },
+                                      "subtext": {
+                                        "text": "People the author mentioned can reply",
+                                        "entities": []
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          "tweetDisplayType": "Tweet"
+                        },
+                        "clientEventInfo": {
+                          "component": "suggest_ranked_organic_tweet",
+                          "element": "tweet",
+                          "details": {
+                            "timelinesDetails": {
+                              "injectionType": "RankedOrganicTweet",
+                              "controllerData": "DAACDAABDAABCgABAAAAAAAAAAAKAAkAAAAAAAAAAAAKAAoAAAGSHdLwqAAAAAA="
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "metadata": {
+                    "conversationMetadata": {
+                      "allTweetIds": [
+                        "2104572631185227899",
+                        "2104592151476043899"
+                      ],
+                      "enableDeduplication": true
+                    }
+                  },
+                  "clientEventInfo": {
+                    "component": "suggest_ranked_organic_tweet",
+                    "details": {
+                      "timelinesDetails": {
+                        "injectionType": "RankedOrganicTweet",
+                        "controllerData": "DAACDAABDAABCgABAAAAAAAAAAAKAAkAAAAAAAAAAAAKAAoAAAGSHdLwqAAAAAA="
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "entryId": "cursor-top-2104610000000000001",
+                "sortIndex": "2104610000000000001",
+                "content": {
+                  "entryType": "TimelineTimelineCursor",
+                  "__typename": "TimelineTimelineCursor",
+                  "value": "DAABCgABGjYxNTIzNDU2Nzg5MDEyMzQAAA",
+                  "cursorType": "Top"
+                }
+              },
+              {
+                "entryId": "cursor-bottom-2104609999999999990",
+                "sortIndex": "2104609999999999990",
+                "content": {
+                  "entryType": "TimelineTimelineCursor",
+                  "__typename": "TimelineTimelineCursor",
+                  "value": "DAABCgABGjYxNTIzNDU2Nzg5MDEyMzQCAAA",
+                  "cursorType": "Bottom"
+                }
+              }
+            ]
+          }
+        ],
+        "metadata": {
+          "scribeConfig": {
+            "page": "following"
+          }
+        },
+        "responseObjects": {
+          "feedbackActions": []
+        }
+      }
+    }
+  }
+}
