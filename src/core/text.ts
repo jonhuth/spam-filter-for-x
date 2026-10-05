@@ -3,7 +3,7 @@
 // weight; the scorer decides.
 
 const URL_RE = /https?:\/\/\S+/g;
-const MENTION_RE = /(^|\s)@\w{1,15}/g;
+const MENTION_RE = /(^|\s)@\w{1,20}/g;
 const EMOJI_RE = /\p{Extended_Pictographic}/gu;
 const HASHTAG_RE = /(^|\s)#\w+/g;
 

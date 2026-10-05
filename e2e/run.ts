@@ -98,7 +98,14 @@ await tab.screenshot({ path: join(out, "muted-toast-desktop.png") });
 
 // Show on a collapsed post reveals just that post.
 await art("growth_mindset_ai").locator(".sfx-bar button").click();
-check((await art("growth_mindset_ai").getAttribute("data-sfx-reveal")) === "1", "Show reveals a collapsed post");
+check((await art("growth_mindset_ai").getAttribute("data-sfx-reveal")) === "collapse", "Show reveals a collapsed post");
+
+// Blocking a revealed post must hide it again.
+await art("growth_mindset_ai").locator(".sfx-flag").click();
+await tab.waitForTimeout(150);
+await tab.getByRole("menuitem", { name: /Block @growth_mindset_ai/ }).click();
+await tab.waitForTimeout(400);
+check(!(await art("growth_mindset_ai").isVisible()), "blocking a revealed post hides it");
 
 // Mobile viewport
 await tab.setViewportSize({ width: 390, height: 844 });

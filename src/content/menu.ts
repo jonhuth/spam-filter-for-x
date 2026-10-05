@@ -76,7 +76,7 @@ let root: ShadowRoot | null = null;
 function shadow(): ShadowRoot {
 	if (root && host?.isConnected) return root;
 	host = document.createElement("sfx-overlay");
-	root = host.attachShadow({ mode: "closed" });
+	root = host.attachShadow({ mode: "open" });
 	const style = document.createElement("style");
 	style.textContent = CSS;
 	root.append(style);
@@ -102,6 +102,13 @@ export function openMenu(anchor: HTMLElement, m: MenuModel, act: (a: MenuAction)
 	menu.setAttribute("style", themeVars());
 	menu.addEventListener("keydown", (e) => {
 		if (e.key === "Escape") closeMenu();
+		if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+		e.preventDefault();
+		const items = [...menu.querySelectorAll<HTMLElement>("button.item")];
+		const i = items.indexOf(r.activeElement as HTMLElement);
+		const next =
+			e.key === "ArrowDown" ? (i + 1) % items.length : (i - 1 + items.length) % items.length;
+		items[next]?.focus();
 	});
 
 	const head = document.createElement("div");

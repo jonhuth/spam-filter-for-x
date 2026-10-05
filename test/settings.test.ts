@@ -46,7 +46,7 @@ describe("settings", () => {
 	test("normalizes entries per list", () => {
 		expect(normalizeEntry("hiddenCountries", "uk")).toBe("United Kingdom");
 		expect(normalizeEntry("mutedWords", "  GM  ")).toBe("gm");
-		expect(normalizeEntry("blockedAccounts", "@way_too_long_handle_x")).toBe("");
+		expect(normalizeEntry("blockedAccounts", "@this_handle_is_far_too_long")).toBe("");
 	});
 });
 
@@ -92,5 +92,56 @@ describe("AboutQueue", () => {
 		q.request("b");
 		await Bun.sleep(5);
 		expect(done).toEqual(["a"]); // 500 → not cached
+	});
+});
+
+describe("v3 migration keeps user lists", () => {
+	test("mute/block lists, whitelist, human overrides, sensitivity", () => {
+		const s = migrateV3({
+			bot_sensitivity: 5,
+			mute_block_lists: {
+				muteWords: [
+					{ id: "1", term: "GM" },
+					{ id: "2", term: "airdrop" },
+				],
+				muteAccounts: [{ id: "3", username: "@Spammer" }],
+				blockAccounts: [{ id: "4", username: "scammer" }],
+			},
+			bot_whitelist: ["Friend", "spammer"],
+			bot_overrides: { pal: { forceHuman: true }, bot1: { forceBot: true } },
+		});
+		expect(s.lists.mutedWords).toEqual(["airdrop", "gm"]);
+		expect(s.lists.mutedAccounts).toEqual(["spammer"]);
+		expect(s.lists.blockedAccounts).toEqual(["scammer"]);
+		expect(s.lists.trustedAccounts).toEqual(["friend", "pal"]);
+		expect(s.sensitivity).toBe("strict");
+	});
+});
+
+describe("muted words in spaceless scripts", () => {
+	test("CJK matches as substring", async () => {
+		const { matchesMutedWord } = await import("../src/shared/settings");
+		expect(matchesMutedWord("这是垃圾广告", ["垃圾"])).toBe("垃圾");
+		expect(matchesMutedWord("AT&T outage", ["at&t"])).toBe("at&t");
+	});
+});
+
+describe("AboutQueue failures", () => {
+	test("auth/404 failures pause the queue and are reported, not cached", async () => {
+		let t = 0;
+		const failed: [string, number][] = [];
+		const done: string[] = [];
+		const q = new AboutQueue(
+			async () => ({ about: null, status: 404 }),
+			(h) => done.push(h),
+			{ minGapMs: 10, baseBackoffMs: 1000, now: () => t, sleep: async (ms) => void (t += ms) },
+			(h, status) => failed.push([h, status]),
+		);
+		q.request("a");
+		q.request("b");
+		await Bun.sleep(5);
+		expect(done).toEqual([]);
+		expect(failed.map((f) => f[0]).sort()).toEqual(["a", "b"]);
+		expect(q.rateLimitedUntil).toBeGreaterThan(0);
 	});
 });

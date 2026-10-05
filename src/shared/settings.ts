@@ -74,7 +74,7 @@ export function normalizeEntry(list: ListName, raw: string): string {
 		case "blockedAccounts":
 		case "trustedAccounts": {
 			const handle = v.replace(/^@/, "").toLowerCase();
-			return /^\w{1,15}$/.test(handle) ? handle : "";
+			return /^\w{1,20}$/.test(handle) ? handle : "";
 		}
 		case "hiddenCountries":
 		case "watchCountries":
@@ -122,14 +122,49 @@ export function sanitize(raw: unknown): Settings {
 	};
 }
 
-/** Build v4 settings from v3 storage keys. */
+/** Build v4 settings from v3 storage keys (flags, country hide, mute/block lists, trust). */
 export function migrateV3(old: Record<string, unknown>): Settings {
 	const s = DEFAULT_SETTINGS();
 	if (typeof old.extension_enabled === "boolean") s.showFlags = old.extension_enabled;
 	if (old.bot_detection_enabled === false || old.hide_bots_enabled === false)
 		s.farmAction = "label";
+	const sens = Number(old.bot_sensitivity);
+	if (sens >= 1 && sens <= 5)
+		s.sensitivity = sens <= 2 ? "relaxed" : sens >= 4 ? "strict" : "balanced";
 	const hidden = (old.hidden_countries as { countries?: unknown } | undefined)?.countries;
 	s.lists.hiddenCountries = cleanList("hiddenCountries", hidden);
+
+	const mb = (old.mute_block_lists ?? {}) as {
+		muteWords?: { term?: unknown }[];
+		muteAccounts?: { username?: unknown }[];
+		blockAccounts?: { username?: unknown }[];
+	};
+	const pick = <T>(arr: T[] | undefined, f: (x: T) => unknown) =>
+		(Array.isArray(arr) ? arr : []).map((x) => String(f(x) ?? ""));
+	s.lists.mutedWords = cleanList(
+		"mutedWords",
+		pick(mb.muteWords, (w) => w?.term),
+	);
+	s.lists.mutedAccounts = cleanList(
+		"mutedAccounts",
+		pick(mb.muteAccounts, (a) => a?.username),
+	);
+	s.lists.blockedAccounts = cleanList(
+		"blockedAccounts",
+		pick(mb.blockAccounts, (a) => a?.username),
+	);
+
+	const overrides = (old.bot_overrides ?? {}) as Record<string, { forceHuman?: boolean }>;
+	const humanMarks = Object.entries(overrides)
+		.filter(([, v]) => v?.forceHuman)
+		.map(([k]) => k);
+	const whitelist = Array.isArray(old.bot_whitelist)
+		? (old.bot_whitelist as unknown[]).map(String)
+		: [];
+	const taken = new Set([...s.lists.mutedAccounts, ...s.lists.blockedAccounts]);
+	s.lists.trustedAccounts = cleanList("trustedAccounts", [...whitelist, ...humanMarks]).filter(
+		(h) => !taken.has(h),
+	);
 	if (old.onboarding_dismissed === true) s.onboardingDismissed = true;
 	return s;
 }
@@ -138,7 +173,11 @@ const V3_KEYS = [
 	"extension_enabled",
 	"bot_detection_enabled",
 	"hide_bots_enabled",
+	"bot_sensitivity",
 	"hidden_countries",
+	"mute_block_lists",
+	"bot_whitelist",
+	"bot_overrides",
 	"onboarding_dismissed",
 ];
 
@@ -207,7 +246,12 @@ export function toggleEntry(s: Settings, list: ListName, raw: string, on?: boole
 export function matchesMutedWord(text: string, words: string[]): string | null {
 	const lower = text.toLowerCase();
 	for (const w of words) {
-		if (/^[\p{L}\p{N}_]+$/u.test(w)) {
+		// Scripts without word spaces (CJK, Thai) can only match as substrings.
+		const spaceless =
+			/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Thai}\p{Script=Hangul}]/u.test(
+				w,
+			);
+		if (!spaceless && /^[\p{L}\p{N}_]+$/u.test(w)) {
 			if (new RegExp(`(^|[^\\p{L}\\p{N}_])${w}($|[^\\p{L}\\p{N}_])`, "u").test(lower)) return w;
 		} else if (lower.includes(w)) return w;
 	}

@@ -5,6 +5,9 @@ import type { Place } from "../core/country";
 import type { Verdict } from "../core/score";
 import { chipAnchor } from "./dom";
 
+// Latest tap handler per chip host, so reused articles never act on stale data.
+const tapHandlers = new WeakMap<HTMLElement, (anchor: HTMLElement) => void>();
+
 const STYLE_ID = "sfx-styles";
 
 const CSS = `
@@ -43,6 +46,7 @@ export function ensureStyles(): void {
 export type ChipKind = "flag" | "badge";
 
 export interface ChipModel {
+	handle: string;
 	place: Place | null;
 	/** About lookup pending. */
 	loading: boolean;
@@ -66,7 +70,9 @@ export function renderChips(
 		host.className = "sfx-chips";
 		anchor.after(host);
 	}
+	tapHandlers.set(host, onTap);
 	const sig = JSON.stringify([
+		model.handle,
 		model.place?.name,
 		model.loading,
 		model.masked,
@@ -89,7 +95,8 @@ export function renderChips(
 		b.addEventListener("click", (e) => {
 			e.preventDefault();
 			e.stopPropagation();
-			onTap(b);
+			const h = b.closest<HTMLElement>(".sfx-chips");
+			if (h) tapHandlers.get(h)?.(b);
 		});
 		return b;
 	};
@@ -119,10 +126,6 @@ export function renderChips(
 		badge.dataset.label = label;
 		host.append(badge);
 	}
-	if (!host.childElementCount) {
-		// Keep an invisible tap target-free host; nothing to show.
-		host.replaceChildren();
-	}
 }
 
 export type Visibility = "show" | "collapse" | "hide";
@@ -133,6 +136,9 @@ export function applyVisibility(
 	summary: string,
 	onShow: () => void,
 ): void {
+	// "Show" reveals only the state it was tapped on; any change re-applies.
+	if (article.dataset.sfxReveal && article.dataset.sfxReveal !== vis)
+		delete article.dataset.sfxReveal;
 	if (vis === "show") {
 		delete article.dataset.sfxState;
 		return;
@@ -150,7 +156,7 @@ export function applyVisibility(
 		show.addEventListener("click", (e) => {
 			e.preventDefault();
 			e.stopPropagation();
-			article.dataset.sfxReveal = "1";
+			article.dataset.sfxReveal = article.dataset.sfxState ?? "collapse";
 			onShow();
 		});
 		bar.append(text, show);

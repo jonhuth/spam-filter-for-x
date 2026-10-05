@@ -1,38 +1,60 @@
 // In-memory account/post store fed by intercepted X traffic, plus a persisted
 // About-this-account cache (30d; misses retried after 1d).
+//
+// The cache is split into small buckets keyed by the handle's first character
+// so a new lookup rewrites one bucket, not the whole cache, and tabs merge
+// rather than overwrite each other.
 
 import type { AboutAccount, Account, ParsedBatch, Post } from "../core/types";
 import { mergeAccount } from "../core/xparse";
 
-const ABOUT_KEY = "about_cache_v4";
-const STATS_KEY = "country_stats_v4";
+export const ABOUT_BUCKET_PREFIX = "about_v4:";
+/** Popup writes this to ask every tab to drop its cache. */
+export const ABOUT_CLEARED_KEY = "about_cleared_at";
 const ABOUT_TTL = 30 * 86_400_000;
 const ABOUT_MISS_TTL = 86_400_000;
-const MAX_ABOUT = 20_000;
 const MAX_POSTS = 5_000;
 
-export interface AboutEntry extends AboutAccount {}
+export const bucketOf = (handle: string) => `${ABOUT_BUCKET_PREFIX}${handle[0] ?? "_"}`;
+
+export function isFresh(entry: AboutAccount | undefined, now = Date.now()): boolean {
+	return Boolean(entry && now - entry.fetchedAt < (entry.basedIn ? ABOUT_TTL : ABOUT_MISS_TTL));
+}
+
+/** Read every bucket; used by the popup for country counts too. */
+export async function readAboutCache(): Promise<Map<string, AboutAccount>> {
+	const out = new Map<string, AboutAccount>();
+	const all = await chrome.storage.local.get(null);
+	const now = Date.now();
+	for (const [key, bucket] of Object.entries(all)) {
+		if (!key.startsWith(ABOUT_BUCKET_PREFIX) || !bucket || typeof bucket !== "object") continue;
+		for (const [handle, entry] of Object.entries(bucket as Record<string, AboutAccount>))
+			if (isFresh(entry, now)) out.set(handle, entry);
+	}
+	return out;
+}
+
+export async function clearAboutCache(): Promise<void> {
+	const all = await chrome.storage.local.get(null);
+	await chrome.storage.local.remove(
+		Object.keys(all).filter((k) => k.startsWith(ABOUT_BUCKET_PREFIX)),
+	);
+	await chrome.storage.local.set({ [ABOUT_CLEARED_KEY]: Date.now() });
+}
 
 export class Store {
 	accounts = new Map<string, Account>();
 	posts = new Map<string, Post>();
-	about = new Map<string, AboutEntry>();
-	/** Country name → distinct accounts seen, for popup quick-hide chips. */
-	countryStats: Record<string, number> = {};
+	about = new Map<string, AboutAccount>();
+	/** Lookups that failed recently (not cached in storage). */
+	private failedAt = new Map<string, number>();
+	private dirtyBuckets = new Set<string>();
 	private saveTimer: ReturnType<typeof setTimeout> | null = null;
 	private listeners = new Set<(handles: Set<string>) => void>();
 
 	async load(): Promise<void> {
 		try {
-			const got = await chrome.storage.local.get([ABOUT_KEY, STATS_KEY]);
-			const now = Date.now();
-			for (const [handle, entry] of Object.entries(
-				(got[ABOUT_KEY] ?? {}) as Record<string, AboutEntry>,
-			)) {
-				if (entry && now - entry.fetchedAt < (entry.basedIn ? ABOUT_TTL : ABOUT_MISS_TTL))
-					this.about.set(handle, entry);
-			}
-			this.countryStats = (got[STATS_KEY] as Record<string, number>) ?? {};
+			this.about = await readAboutCache();
 		} catch {
 			/* start empty */
 		}
@@ -52,9 +74,8 @@ export class Store {
 		for (const a of batch.accounts) {
 			const prev = this.accounts.get(a.handle);
 			const merged = prev ? mergeAccount(prev, a) : a;
-			const about = this.about.get(a.handle);
-			if (about && !merged.about) merged.about = about;
 			if (a.about) this.setAbout(a.handle, a.about, false);
+			else if (!merged.about && this.about.has(a.handle)) merged.about = this.about.get(a.handle);
 			this.accounts.set(a.handle, merged);
 			changed.add(a.handle);
 		}
@@ -69,21 +90,33 @@ export class Store {
 		if (changed.size) this.emit(changed);
 	}
 
-	needsAbout(handle: string): boolean {
-		return !this.about.has(handle);
+	/** True when a lookup is worth making now. */
+	needsAbout(handle: string, now = Date.now()): boolean {
+		if (this.about.has(handle)) return false;
+		const failed = this.failedAt.get(handle);
+		return !failed || now - failed > 10 * 60_000;
 	}
 
-	getAbout(handle: string): AboutEntry | undefined {
+	/** A lookup is outstanding or retryable — show the loading chip. */
+	aboutPending(handle: string): boolean {
+		return !this.about.has(handle) && !this.failedAt.has(handle);
+	}
+
+	getAbout(handle: string): AboutAccount | undefined {
 		return this.about.get(handle);
 	}
 
+	markFailed(handle: string): void {
+		this.failedAt.set(handle, Date.now());
+		this.emit(new Set([handle]));
+	}
+
 	setAbout(handle: string, about: AboutAccount, emit = true): void {
-		const isNew = !this.about.get(handle)?.basedIn;
 		this.about.set(handle, about);
+		this.failedAt.delete(handle);
 		const account = this.accounts.get(handle);
 		if (account) account.about = about;
-		if (isNew && about.basedIn)
-			this.countryStats[about.basedIn] = (this.countryStats[about.basedIn] ?? 0) + 1;
+		this.dirtyBuckets.add(bucketOf(handle));
 		this.scheduleSave();
 		if (emit) this.emit(new Set([handle]));
 	}
@@ -100,35 +133,36 @@ export class Store {
 		this.saveTimer = setTimeout(() => {
 			this.saveTimer = null;
 			void this.save();
-		}, 3000);
+		}, 10_000);
 	}
 
 	async save(): Promise<void> {
+		const buckets = [...this.dirtyBuckets];
+		this.dirtyBuckets.clear();
 		try {
-			if (!chrome.runtime?.id) return;
-			let entries = [...this.about.entries()];
-			if (entries.length > MAX_ABOUT) {
-				entries = entries.sort((a, b) => b[1].fetchedAt - a[1].fetchedAt).slice(0, MAX_ABOUT);
-				this.about = new Map(entries);
+			if (!chrome.runtime?.id || !buckets.length) return;
+			const stored = await chrome.storage.local.get(buckets);
+			const now = Date.now();
+			const writes: Record<string, Record<string, AboutAccount>> = {};
+			for (const key of buckets) {
+				const merged: Record<string, AboutAccount> = {};
+				for (const [h, e] of Object.entries((stored[key] ?? {}) as Record<string, AboutAccount>))
+					if (isFresh(e, now)) merged[h] = e;
+				for (const [h, e] of this.about)
+					if (bucketOf(h) === key && (!merged[h] || merged[h].fetchedAt < e.fetchedAt))
+						merged[h] = e;
+				writes[key] = merged;
 			}
-			await chrome.storage.local.set({
-				[ABOUT_KEY]: Object.fromEntries(entries),
-				[STATS_KEY]: this.countryStats,
-			});
+			await chrome.storage.local.set(writes);
 		} catch {
 			/* storage full or context invalidated */
 		}
 	}
 
-	async clear(): Promise<void> {
+	reset(): void {
 		this.about.clear();
-		this.countryStats = {};
-		try {
-			await chrome.storage.local.remove([ABOUT_KEY, STATS_KEY]);
-		} catch {
-			/* ignore */
-		}
+		this.failedAt.clear();
+		this.dirtyBuckets.clear();
+		for (const a of this.accounts.values()) delete a.about;
 	}
 }
-
-export const ABOUT_STORAGE_KEYS = [ABOUT_KEY, STATS_KEY];

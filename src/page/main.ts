@@ -33,6 +33,20 @@ function send(msg: PageToContent): void {
 	window.postMessage(env, window.location.origin);
 }
 
+/** Only session/auth headers; per-request ones (transaction id, content-type) must not be replayed. */
+const REPLAY_HEADERS = [
+	"authorization",
+	"x-csrf-token",
+	"x-twitter-auth-type",
+	"x-twitter-active-user",
+	"x-twitter-client-language",
+];
+function pickAuthHeaders(h: Record<string, string>): Record<string, string> {
+	const out: Record<string, string> = {};
+	for (const k of REPLAY_HEADERS) if (h[k]) out[k] = h[k];
+	return out;
+}
+
 function captureHeaders(h: HeadersInit | undefined): void {
 	if (!h) return;
 	const out: Record<string, string> = {};
@@ -43,7 +57,7 @@ function captureHeaders(h: HeadersInit | undefined): void {
 	} catch {
 		return;
 	}
-	if (out.authorization) headers = out;
+	if (out.authorization) headers = pickAuthHeaders(out);
 }
 
 function handleGraphQLBody(url: string, body: unknown): void {
@@ -111,7 +125,7 @@ XHR.setRequestHeader = function patchedSetHeader(
 ) {
 	if (this.__sfxHeaders && isGraphQL(this.__sfxUrl ?? "")) {
 		this.__sfxHeaders[name.toLowerCase()] = value;
-		if (name.toLowerCase() === "authorization") headers = { ...this.__sfxHeaders };
+		if (this.__sfxHeaders.authorization) headers = pickAuthHeaders(this.__sfxHeaders);
 	}
 	return originalSetHeader.call(this, name, value);
 };

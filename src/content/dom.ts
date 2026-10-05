@@ -43,13 +43,13 @@ export function handleOf(article: Element): string | null {
 	const root = article.querySelector(SEL.userName);
 	if (!root) return null;
 	for (const link of root.querySelectorAll<HTMLAnchorElement>("a[href^='/']")) {
-		const m = (link.getAttribute("href") ?? "").match(/^\/(\w{1,15})(?:$|[/?])/);
+		const m = (link.getAttribute("href") ?? "").match(/^\/(\w{1,20})(?:$|[/?])/);
 		const h = m?.[1]?.toLowerCase();
 		if (h && !RESERVED.has(h) && (link.textContent ?? "").trim().toLowerCase() === `@${h}`)
 			return h;
 	}
 	for (const link of root.querySelectorAll<HTMLAnchorElement>("a[href^='/']")) {
-		const m = (link.getAttribute("href") ?? "").match(/^\/(\w{1,15})$/);
+		const m = (link.getAttribute("href") ?? "").match(/^\/(\w{1,20})$/);
 		const h = m?.[1]?.toLowerCase();
 		if (h && !RESERVED.has(h)) return h;
 	}

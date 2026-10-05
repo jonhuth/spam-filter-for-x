@@ -2,6 +2,7 @@
 // storage; content scripts react via storage.onChanged.
 
 import { FocusMode } from "../content/focus.js";
+import { ABOUT_BUCKET_PREFIX, clearAboutCache, readAboutCache } from "../content/store";
 import { BLOC_LABEL, type Bloc, resolvePlace } from "../core/country";
 import {
 	type ListName,
@@ -122,7 +123,18 @@ function renderHomeBlocs(): void {
 	);
 }
 
+/** Country label → accounts located, computed from the local About cache. */
 let countryStats: Record<string, number> = {};
+async function loadCountryStats(): Promise<void> {
+	countryStats = {};
+	try {
+		for (const about of (await readAboutCache()).values())
+			if (about.basedIn) countryStats[about.basedIn] = (countryStats[about.basedIn] ?? 0) + 1;
+	} catch {
+		/* storage unavailable */
+	}
+}
+
 function renderQuickCountries(): void {
 	const hidden = new Set(settings.lists.hiddenCountries.map((c) => c.toLowerCase()));
 	const totals = new Map<string, { label: string; n: number }>();
@@ -323,9 +335,9 @@ $("onboarding-dismiss").addEventListener(
 	() => void save((s) => (s.onboardingDismissed = true)),
 );
 $("clear-cache").addEventListener("click", async () => {
-	await chrome.storage.local.remove(["about_cache_v4", "country_stats_v4"]);
+	await clearAboutCache();
 	countryStats = {};
-	render();
+	renderQuickCountries();
 });
 
 function render(): void {
@@ -339,25 +351,27 @@ function render(): void {
 	renderLists();
 }
 
+let statsTimer: ReturnType<typeof setTimeout> | null = null;
+
 chrome.storage.onChanged.addListener((changes, area) => {
 	if (area !== "local") return;
-	if (changes[SETTINGS_KEY]) settings = sanitize(changes[SETTINGS_KEY].newValue);
-	if (changes.country_stats_v4)
-		countryStats = (changes.country_stats_v4.newValue as Record<string, number>) ?? {};
-	if (changes[SETTINGS_KEY] || changes.country_stats_v4) render();
+	if (changes[SETTINGS_KEY]) {
+		settings = sanitize(changes[SETTINGS_KEY].newValue);
+		render();
+	}
+	// Cache writes only refresh the quick-hide chips, never the list inputs.
+	if (Object.keys(changes).some((k) => k.startsWith(ABOUT_BUCKET_PREFIX)) && !statsTimer) {
+		statsTimer = setTimeout(async () => {
+			statsTimer = null;
+			await loadCountryStats();
+			renderQuickCountries();
+		}, 500);
+	}
 });
 
 async function init(): Promise<void> {
 	settings = await loadSettings();
-	try {
-		countryStats =
-			((await chrome.storage.local.get("country_stats_v4")).country_stats_v4 as Record<
-				string,
-				number
-			>) ?? {};
-	} catch {
-		countryStats = {};
-	}
+	await loadCountryStats();
 	try {
 		const saved = localStorage.getItem("sfx-tab");
 		const tab = tabs.find((t) => t.dataset.tab === saved);

@@ -16,6 +16,7 @@ import {
 	hasEntry,
 	type ListName,
 	loadSettings,
+	normalizeEntry,
 	SETTINGS_KEY,
 	type Settings,
 	sanitize,
@@ -27,7 +28,7 @@ import { focalPostId, readTweet, SEL } from "./dom";
 import { FocusMode } from "./focus.js";
 import { type MenuAction, openMenu, toast } from "./menu";
 import { applyVisibility, clearAll, ensureStyles, renderChips } from "./render";
-import { ABOUT_STORAGE_KEYS, Store } from "./store";
+import { ABOUT_CLEARED_KEY, Store } from "./store";
 
 const nonce = crypto.randomUUID();
 const store = new Store();
@@ -46,7 +47,15 @@ function injectPageScript(): void {
 let reqSeq = 0;
 const pending = new Map<number, (msg: PageToContent) => void>();
 
+// Messages wait until the page script announces it is listening.
+let pageReady = false;
+const outbox: ContentToPage[] = [];
+
 function toPage(msg: ContentToPage): void {
+	if (!pageReady) {
+		outbox.push(msg);
+		return;
+	}
 	const env: Envelope<ContentToPage> = { tag: "sfx", nonce, dir: "toPage", msg };
 	window.postMessage(env, window.location.origin);
 }
@@ -72,7 +81,10 @@ function request<T extends PageToContent>(
 window.addEventListener("message", (event) => {
 	if (event.source !== window || !isEnvelope<PageToContent>(event.data, nonce, "toContent")) return;
 	const msg = event.data.msg;
-	if (msg.kind === "batch") store.ingest(msg.batch);
+	if (msg.kind === "ready") {
+		pageReady = true;
+		for (const m of outbox.splice(0)) toPage(m);
+	} else if (msg.kind === "batch") store.ingest(msg.batch);
 	else if (msg.kind === "about" || msg.kind === "xActionResult") {
 		pending.get(msg.reqId)?.(msg);
 		pending.delete(msg.reqId);
@@ -189,8 +201,9 @@ function evaluate(el: HTMLElement): void {
 	renderChips(
 		el,
 		{
+			handle,
 			place: d.place,
-			loading: s.enabled && store.needsAbout(handle),
+			loading: s.enabled && store.aboutPending(handle),
 			masked: d.masked,
 			verdict: d.verdict,
 			muted: d.listReason === "muted" || d.listReason === "word" ? "muted" : null,
@@ -245,6 +258,19 @@ async function runAction(
 	const s = settings;
 	if (!s) return;
 	const at = `@${handle}`;
+	const target: Partial<Record<MenuAction["type"], [ListName, string | undefined]>> = {
+		mute: ["mutedAccounts", handle],
+		block: ["blockedAccounts", handle],
+		trust: ["trustedAccounts", handle],
+		hideCountry: ["hiddenCountries", country],
+		watchCountry: ["watchCountries", country],
+		muteWord: ["mutedWords", a.type === "muteWord" ? a.word : undefined],
+	};
+	const t = target[a.type];
+	if (t && !normalizeEntry(t[0], t[1] ?? "")) {
+		toast("Couldn’t apply that — invalid entry");
+		return;
+	}
 	switch (a.type) {
 		case "mute":
 		case "block": {
@@ -280,9 +306,11 @@ async function runAction(
 		}
 		case "muteWord": {
 			await setEntry("mutedWords", a.word, true);
-			let suffix = "";
-			if (s.mirrorToX) suffix = (await mirrorToX("muteWord", a.word)) ? " here and on X" : "";
-			toast(`Muted “${a.word}”${suffix}`, () => void setEntry("mutedWords", a.word, false));
+			// X's keyword unmute needs X's own id, so a mirrored word mute has no
+			// one-tap undo here; it can be removed in X's settings.
+			if (s.mirrorToX && (await mirrorToX("muteWord", a.word)))
+				toast(`Muted “${a.word}” here and on X`);
+			else toast(`Muted “${a.word}”`, () => void setEntry("mutedWords", a.word, false));
 			break;
 		}
 		case "mirrorToX":
@@ -345,9 +373,8 @@ chrome.storage.onChanged.addListener((changes, area) => {
 		if (!settings.enabled) clearAll();
 		rescanAll();
 	}
-	if (ABOUT_STORAGE_KEYS.some((k) => changes[k] && changes[k].newValue === undefined)) {
-		store.about.clear();
-		store.countryStats = {};
+	if (changes[ABOUT_CLEARED_KEY]) {
+		store.reset();
 		rescanAll();
 	}
 });

@@ -121,3 +121,15 @@ describe("queryId discovery", () => {
 		});
 	});
 });
+
+test("decodes X's HTML-escaped tweet text", () => {
+	const { posts } = parseGraphQL({
+		__typename: "Tweet",
+		rest_id: "1",
+		legacy: { full_text: "AT&amp;T &lt;3", user_id_str: "2" },
+		core: {
+			user_results: { result: { __typename: "User", rest_id: "2", core: { screen_name: "a" } } },
+		},
+	});
+	expect(posts[0]!.text).toBe("AT&T <3");
+});

@@ -18,6 +18,11 @@ const num = (v: unknown): number | undefined =>
 			: undefined;
 const bool = (v: unknown): boolean | undefined => (typeof v === "boolean" ? v : undefined);
 
+/** X's legacy text is HTML-escaped (&amp; &lt; &gt;). */
+export function unescapeHtml(s: string): string {
+	return s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+}
+
 /** X dates look like "Wed Oct 10 20:19:24 +0000 2018". */
 export function parseXDate(v: unknown): number | undefined {
 	const s = str(v);
@@ -121,7 +126,7 @@ export function parseTweet(raw: unknown): Post | null {
 		id,
 		authorId,
 		authorHandle: authorHandle.toLowerCase(),
-		text: str(note.text) ?? str(legacy.full_text) ?? "",
+		text: unescapeHtml(str(note.text) ?? str(legacy.full_text) ?? ""),
 		lang: str(legacy.lang),
 		conversationId: str(legacy.conversation_id_str),
 		inReplyToId: str(legacy.in_reply_to_status_id_str),

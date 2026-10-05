@@ -32,6 +32,7 @@ export class AboutQueue {
 		private fetcher: AboutFetcher,
 		private onResult: (handle: string, about: AboutAccount | null) => void,
 		opts: QueueOptions = {},
+		private onFailure: (handle: string, status: number) => void = () => {},
 	) {
 		this.minGap = opts.minGapMs ?? 2500;
 		this.maxQueue = opts.maxQueue ?? 60;
@@ -83,8 +84,18 @@ export class AboutQueue {
 					continue;
 				}
 				this.consecutive429 = 0;
-				// Transient failures (network, 5xx) are not cached; 200 with no label is.
-				if (status === 200 || about) this.onResult(handle, about);
+				// 200 (even with no label) is cached; failures are not, but are
+				// reported so the caller stops re-requesting for a while.
+				if (status === 200 || about) {
+					this.onResult(handle, about);
+					continue;
+				}
+				this.onFailure(handle, status);
+				// Auth / unknown query id: the next request will fail the same way.
+				if (status === 401 || status === 403 || status === 404) {
+					this.backoffUntil = this.now() + this.baseBackoff * 2;
+					for (const h of this.queue.splice(0)) this.onFailure(h, status);
+				}
 			}
 		} finally {
 			this.running = false;
