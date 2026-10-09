@@ -70,13 +70,40 @@ export function focalPostId(path = location.pathname): string | null {
 	return path.match(/^\/\w+\/status\/(\d+)/)?.[1] ?? null;
 }
 
-/** Where to put inline chips: right after the display-name link. */
+function isFlexRow(el: Element): boolean {
+	const cs = getComputedStyle(el);
+	return (
+		(cs.display === "flex" || cs.display === "inline-flex") && cs.flexDirection.startsWith("row")
+	);
+}
+
+/**
+ * Where inline chips go: on the display-name line, right after the name
+ * (and its verified badge), before the @handle.
+ *
+ * X's base div style is a flex *column*, and the name link sits inside one,
+ * so inserting next to the link stacks the chip underneath. Instead find the
+ * nearest ancestor that is a flex *row* and insert after its child that
+ * contains the link. Returns the node to insert after.
+ */
 export function chipAnchor(article: Element): Element | null {
 	const root = article.querySelector(SEL.userName);
 	if (!root) return null;
-	for (const link of root.querySelectorAll("a[href^='/']")) {
-		const text = (link.textContent ?? "").trim();
-		if (!text.startsWith("@") && !link.querySelector("time")) return link;
+	let link: Element | null = null;
+	for (const a of root.querySelectorAll("a[href^='/']")) {
+		const text = (a.textContent ?? "").trim();
+		if (!text.startsWith("@") && !a.querySelector("time")) {
+			link = a;
+			break;
+		}
 	}
-	return root.firstElementChild;
+	if (!link) return root.firstElementChild;
+	let child: Element = link;
+	let parent = link.parentElement;
+	while (parent && parent !== root.parentElement) {
+		if (isFlexRow(parent)) return child;
+		child = parent;
+		parent = parent.parentElement;
+	}
+	return link;
 }
