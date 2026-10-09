@@ -127,9 +127,21 @@ export function aboutAccount(handle: string) {
 export function page(): string {
 	const article = (p: MockPost) => `
 <div data-testid="cellInnerDiv"><article data-testid="tweet" role="article" style="border-bottom:1px solid #eff3f4;padding:12px 16px">
-  <div data-testid="User-Name" style="display:flex;gap:4px;align-items:center">
-    <div style="display:flex"><a href="/${p.user.handle}" style="font-weight:700;color:#0f1419;text-decoration:none"><span>${p.user.name}</span></a></div>
-    <div style="display:flex;gap:4px;color:#536471"><a href="/${p.user.handle}" style="color:#536471;text-decoration:none">@${p.user.handle}</a> · <a href="/${p.user.handle}/status/${p.id}"><time>1h</time></a></div>
+  <div data-testid="User-Name" style="display:flex;flex-direction:row;align-items:baseline">
+    <div style="display:flex;flex-direction:row;flex-shrink:1;min-width:0">
+      <div style="display:flex;flex-direction:column">
+        <a href="/${p.user.handle}" style="display:flex;flex-direction:column;color:#0f1419;text-decoration:none">
+          <div style="display:flex;flex-direction:row;align-items:center">
+            <div dir="ltr" style="font-weight:700"><span>${p.user.name}</span></div>
+            <div dir="ltr" style="display:flex;flex-direction:column"><svg width="16" height="16" viewBox="0 0 16 16" aria-label="Verified"><circle cx="8" cy="8" r="7" fill="#1d9bf0"/></svg></div>
+          </div>
+        </a>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:row;gap:4px;color:#536471;margin-left:4px">
+      <div style="display:flex;flex-direction:column"><a href="/${p.user.handle}" style="color:#536471;text-decoration:none">@${p.user.handle}</a></div>
+      <span>·</span><a href="/${p.user.handle}/status/${p.id}"><time>1h</time></a>
+    </div>
   </div>
   <div data-testid="tweetText" style="margin-top:4px">${p.text}</div>
 </article></div>`;

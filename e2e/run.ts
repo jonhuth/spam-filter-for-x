@@ -73,6 +73,18 @@ await tab.waitForTimeout(300);
 const flagText = async (handle: string) => (await art(handle).locator(".sfx-flag").textContent())?.trim();
 check((await flagText("senate_watch")) === "🇺🇸", "focal post shows 🇺🇸 flag");
 check((await flagText("policy_nerd")) === "🇩🇪", "German reply shows 🇩🇪");
+for (const h of ["senate_watch", "policy_nerd", "my_friend"]) {
+	const [name, flag, handle] = await Promise.all([
+		art(h).locator('[data-testid="User-Name"] a[href^="/"] span').first().boundingBox(),
+		art(h).locator(".sfx-flag").boundingBox(),
+		art(h).locator(`a:text-is("@${h}")`).boundingBox(),
+	]);
+	const inline =
+		name && flag && handle &&
+		Math.abs(flag.y + flag.height / 2 - (name.y + name.height / 2)) < 6 &&
+		flag.x > name.x + name.width && flag.x + flag.width <= handle.x;
+	check(Boolean(inline), `@${h} flag sits inline between name and @handle`);
+}
 for (const u of [users.farm1!, users.farm2!, users.farm3!])
 	check((await state(u.handle)) === "hide", `farm @${u.handle} hidden`);
 check((await state("growth_mindset_ai")) === "collapse", "off-region AI-style slop collapsed");
