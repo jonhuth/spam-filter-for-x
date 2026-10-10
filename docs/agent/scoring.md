@@ -33,12 +33,18 @@ UI shows. Labels: `trusted`, `ok`, `slop`, `farm`.
 | Text | generic praise (short) · AI-style phrasing · restates the parent post | +1 each |
 | Text | emoji-only · 3+ hashtags | +0.5 · +0.6 |
 | Thread | near-duplicate of replies by 2+ other accounts (strong) | +2.5 |
+| You | 👍 Looks fine · 👎 Spam (strong) from the tap menu | −4 · +4 |
 
 Thread region comes from the root post's topic (US or EU politics lexicon), and failing
 that from its author's country. The **My regions** setting exempts blocs from
 off-region weight.
 
 ## Tuning
+
+Vote 👍/👎 from the tap menu as you browse, then export from the popup and run
+`bun run calibrate ~/Downloads/spam-filter-feedback.json`. It lists signals that fire on
+accounts you marked fine (lower those weights) and spam the scorer missed (add signals).
+
 
 Add a unit test in `test/score.test.ts` for any false positive before changing weights.
 Prefer adding a negative (trust) signal over raising thresholds.

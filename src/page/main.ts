@@ -173,11 +173,17 @@ async function fetchAbout(reqId: number, handle: string): Promise<void> {
 			},
 		);
 		status = res.status;
+		const remaining = Number(res.headers.get("x-rate-limit-remaining"));
+		const reset = Number(res.headers.get("x-rate-limit-reset"));
+		const rate =
+			Number.isFinite(remaining) && reset > 0 && res.headers.has("x-rate-limit-remaining")
+				? { remaining, resetAt: reset * 1000 }
+				: undefined;
 		const body = res.ok ? await res.json() : null;
 		const about = body ? parseAboutAccountResponse(body) : null;
 		const account = body ? parseAboutAccountUser(body) : null;
 		if (account) send({ kind: "batch", batch: { accounts: [account], posts: [] } });
-		send({ kind: "about", reqId, handle, about, status });
+		send({ kind: "about", reqId, handle, about, status, rate });
 	} catch {
 		send({ kind: "about", reqId, handle, about: null, status });
 	}

@@ -4,6 +4,7 @@
 import { FocusMode } from "../content/focus.js";
 import { ABOUT_BUCKET_PREFIX, clearAboutCache, readAboutCache } from "../content/store";
 import { BLOC_LABEL, type Bloc, resolvePlace } from "../core/country";
+import { FEEDBACK_KEY, loadFeedback } from "../shared/feedback";
 import {
 	type ListName,
 	loadSettings,
@@ -334,6 +335,26 @@ $("onboarding-dismiss").addEventListener(
 	"click",
 	() => void save((s) => (s.onboardingDismissed = true)),
 );
+$("export-feedback").addEventListener("click", async () => {
+	const fb = await loadFeedback();
+	const blob = new Blob(
+		[JSON.stringify({ exportedAt: new Date().toISOString(), feedback: fb }, null, 2)],
+		{
+			type: "application/json",
+		},
+	);
+	const a = document.createElement("a");
+	a.href = URL.createObjectURL(blob);
+	a.download = "spam-filter-feedback.json";
+	a.click();
+	setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+});
+
+async function renderFeedbackCount(): Promise<void> {
+	const n = Object.keys(await loadFeedback()).length;
+	$("export-feedback").textContent = n ? `Export feedback (${n})` : "Export feedback";
+}
+
 $("clear-cache").addEventListener("click", async () => {
 	await clearAboutCache();
 	countryStats = {};
@@ -355,6 +376,7 @@ let statsTimer: ReturnType<typeof setTimeout> | null = null;
 
 chrome.storage.onChanged.addListener((changes, area) => {
 	if (area !== "local") return;
+	if (changes[FEEDBACK_KEY]) void renderFeedbackCount();
 	if (changes[SETTINGS_KEY]) {
 		settings = sanitize(changes[SETTINGS_KEY].newValue);
 		render();
@@ -380,6 +402,7 @@ async function init(): Promise<void> {
 		/* ignore */
 	}
 	render();
+	void renderFeedbackCount();
 	await renderFocus();
 }
 

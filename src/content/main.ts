@@ -13,6 +13,13 @@ import {
 	type XAction,
 } from "../shared/bridge";
 import {
+	entryFor,
+	FEEDBACK_KEY,
+	type FeedbackMap,
+	loadFeedback,
+	setVote,
+} from "../shared/feedback";
+import {
 	hasEntry,
 	type ListName,
 	loadSettings,
@@ -27,12 +34,15 @@ import { AboutQueue } from "./aboutQueue";
 import { focalPostId, readTweet, SEL } from "./dom";
 import { FocusMode } from "./focus.js";
 import { type MenuAction, openMenu, toast } from "./menu";
-import { applyVisibility, clearAll, ensureStyles, renderChips } from "./render";
+import { applyVisibility, clearAll, ensureStyles, renderChips, renderThreadBar } from "./render";
 import { ABOUT_CLEARED_KEY, Store } from "./store";
 
 const nonce = crypto.randomUUID();
 const store = new Store();
 let settings: Settings | null = null;
+let feedback: FeedbackMap = {};
+/** Conversation ids where the user tapped "Show all". */
+const revealedThreads = new Set<string>();
 
 // ── Page bridge ───────────────────────────────────────────────────────────
 
@@ -98,7 +108,7 @@ const aboutQueue = new AboutQueue(
 			reqId,
 			handle,
 		}));
-		return { about: res?.about ?? null, status: res?.status ?? 0 };
+		return { about: res?.about ?? null, status: res?.status ?? 0, rate: res?.rate };
 	},
 	(handle, about) => {
 		store.setAbout(
@@ -106,6 +116,8 @@ const aboutQueue = new AboutQueue(
 			about ?? ({ basedIn: null, fetchedAt: Date.now() } satisfies AboutAccount),
 		);
 	},
+	{},
+	(handle) => store.markFailed(handle),
 );
 
 async function mirrorToX(action: XAction, target: string): Promise<boolean> {
@@ -121,7 +133,7 @@ async function mirrorToX(action: XAction, target: string): Promise<boolean> {
 // ── Evaluation ────────────────────────────────────────────────────────────
 
 const contextCache = new Map<string, { ctx: ThreadContext; key: string }>();
-const clusterCache = new Map<string, { sizes: Map<string, number>; count: number }>();
+const clusterCache = new Map<string, { sizes: Map<string, number>; storeSize: number }>();
 
 function contextFor(post: Post): ThreadContext | undefined {
 	const convId = post.conversationId;
@@ -140,12 +152,13 @@ function contextFor(post: Post): ThreadContext | undefined {
 function clusterSize(post: Post): number | undefined {
 	const convId = post.conversationId;
 	if (!convId || !post.inReplyToId) return undefined;
-	const replies = [...store.posts.values()].filter(
-		(p) => p.conversationId === convId && p.inReplyToId,
-	);
+	// Recompute only when the store has grown since the last pass.
 	let entry = clusterCache.get(convId);
-	if (!entry || entry.count !== replies.length) {
-		entry = { sizes: duplicateClusters(replies), count: replies.length };
+	if (!entry || entry.storeSize !== store.posts.size) {
+		const replies = [...store.posts.values()].filter(
+			(p) => p.conversationId === convId && p.inReplyToId,
+		);
+		entry = { sizes: duplicateClusters(replies), storeSize: store.posts.size };
 		clusterCache.set(convId, entry);
 	}
 	return entry.sizes.get(post.id);
@@ -183,20 +196,14 @@ function evaluate(el: HTMLElement): void {
 		authorHandle: handle,
 		text: ref.text,
 	};
-	const account = store.account(handle);
+	const d = decideFor(post, ref.postId);
 
-	if (s.enabled && store.needsAbout(handle) && visible.has(el)) aboutQueue.request(handle);
-
-	const parent = post.inReplyToId ? store.posts.get(post.inReplyToId) : undefined;
-	const d = decide({
-		post,
-		account,
-		parentText: parent?.text,
-		context: contextFor(post),
-		clusterSize: clusterSize(post),
-		settings: s,
-		isFocal: Boolean(ref.postId && ref.postId === focalPostId()),
-	});
+	// Riskiest unknown accounts get located first; trusted ones last.
+	if (s.enabled && store.needsAbout(handle) && visible.has(el)) {
+		const priority =
+			d.verdict.label === "trusted" ? -10 : d.verdict.score + (post.inReplyToId ? 1 : 0);
+		aboutQueue.request(handle, priority);
+	}
 
 	renderChips(
 		el,
@@ -213,6 +220,76 @@ function evaluate(el: HTMLElement): void {
 		(anchor) => showMenu(anchor, handle, d, post),
 	);
 	applyVisibility(el, d.visibility, d.summary, () => evaluate(el));
+}
+
+function threadOf(): { focalId: string; convId: string } | null {
+	const focalId = focalPostId();
+	if (!focalId) return null;
+	return { focalId, convId: store.posts.get(focalId)?.conversationId ?? focalId };
+}
+
+function decideFor(post: Post, domPostId?: string | null) {
+	const thread = threadOf();
+	const id = domPostId ?? post.id;
+	const inThread = Boolean(
+		thread && id !== thread.focalId && post.inReplyToId && post.conversationId === thread.convId,
+	);
+	const parent = post.inReplyToId ? store.posts.get(post.inReplyToId) : undefined;
+	return decide({
+		post,
+		account: store.account(post.authorHandle),
+		parentText: parent?.text,
+		context: contextFor(post),
+		clusterSize: clusterSize(post),
+		settings: settings!,
+		isFocal: Boolean(thread && id === thread.focalId),
+		inThread,
+		threadRevealed: Boolean(thread && revealedThreads.has(thread.convId)),
+		feedback: feedback[post.authorHandle]?.vote,
+	});
+}
+
+/** "18 low-quality replies hidden · 🇳🇬 6 · 🇮🇳 5" over every reply X sent, not only mounted ones. */
+function threadSummary(): string | null {
+	const thread = threadOf();
+	if (!thread || !settings || revealedThreads.has(thread.convId)) return null;
+	let n = 0;
+	const byPlace = new Map<string, number>();
+	for (const p of store.posts.values()) {
+		if (p.conversationId !== thread.convId || !p.inReplyToId || p.id === thread.focalId) continue;
+		const d = decideFor(p);
+		if (d.visibility !== "fold") continue;
+		// Folded replies aren't on screen, but their countries feed the bar.
+		// Located after what's visible (lower priority).
+		if (store.needsAbout(p.authorHandle)) aboutQueue.request(p.authorHandle, d.verdict.score - 5);
+		n++;
+		const key = d.place?.emoji ?? "❔";
+		byPlace.set(key, (byPlace.get(key) ?? 0) + 1);
+	}
+	if (!n) return null;
+	const top = [...byPlace.entries()]
+		.sort((x, y) => y[1] - x[1])
+		.slice(0, 5)
+		.map(([e, c]) => `${e} ${c}`)
+		.join(" · ");
+	return `${n} low-quality ${n === 1 ? "reply" : "replies"} hidden · ${top}`;
+}
+
+let barTimer: ReturnType<typeof setTimeout> | null = null;
+function updateThreadBar(): void {
+	if (barTimer) return;
+	barTimer = setTimeout(() => {
+		barTimer = null;
+		renderThreadBarNow();
+	}, 250);
+}
+
+function renderThreadBarNow(): void {
+	renderThreadBar(threadSummary(), () => {
+		const thread = threadOf();
+		if (thread) revealedThreads.add(thread.convId);
+		rescanAll();
+	});
 }
 
 function showMenu(
@@ -238,6 +315,7 @@ function showMenu(
 			isCountryHidden: Boolean(place && hasEntry(s, "hiddenCountries", place.name)),
 			isCountryWatched: Boolean(place && hasEntry(s, "watchCountries", place.name)),
 			mirrorToX: s.mirrorToX,
+			vote: feedback[handle]?.vote ?? null,
 			selectedText: window.getSelection()?.toString().trim() || "",
 		},
 		(a) => void runAction(a, handle, place?.name, post),
@@ -253,7 +331,7 @@ async function runAction(
 	a: MenuAction,
 	handle: string,
 	country: string | undefined,
-	_post: Post,
+	post: Post,
 ): Promise<void> {
 	const s = settings;
 	if (!s) return;
@@ -276,15 +354,20 @@ async function runAction(
 		case "block": {
 			const list: ListName = a.type === "mute" ? "mutedAccounts" : "blockedAccounts";
 			await setEntry(list, handle, a.on);
+			const xAction = (on: boolean): XAction =>
+				a.type === "mute" ? (on ? "mute" : "unmute") : on ? "block" : "unblock";
+			let mirrored = false;
 			let suffix = "";
 			if (s.mirrorToX) {
-				const action: XAction =
-					a.type === "mute" ? (a.on ? "mute" : "unmute") : a.on ? "block" : "unblock";
-				suffix = (await mirrorToX(action, handle)) ? " here and on X" : " here (X didn’t respond)";
+				mirrored = await mirrorToX(xAction(a.on), handle);
+				suffix = mirrored ? " here and on X" : " here (X didn’t respond)";
 			}
 			const verb =
 				a.type === "mute" ? (a.on ? "Muted" : "Unmuted") : a.on ? "Blocked" : "Unblocked";
-			toast(`${verb} ${at}${suffix}`, () => void setEntry(list, handle, !a.on));
+			toast(`${verb} ${at}${suffix}`, () => {
+				void setEntry(list, handle, !a.on);
+				if (mirrored) void mirrorToX(xAction(!a.on), handle);
+			});
 			break;
 		}
 		case "trust":
@@ -313,6 +396,27 @@ async function runAction(
 			else toast(`Muted “${a.word}”`, () => void setEntry("mutedWords", a.word, false));
 			break;
 		}
+		case "vote": {
+			const prev = feedback[handle] ?? null;
+			const verdict = decideFor(post).verdict;
+			const basedIn = store.getAbout(handle)?.basedIn;
+			feedback = await setVote(
+				handle,
+				a.vote ? entryFor(a.vote, verdict, basedIn, post.text) : null,
+			);
+			rescanAll();
+			const msg =
+				a.vote === "fine"
+					? `Got it — ${at} looks fine`
+					: a.vote === "spam"
+						? `Marked ${at} as spam`
+						: "Vote cleared";
+			toast(msg, async () => {
+				feedback = await setVote(handle, prev);
+				rescanAll();
+			});
+			break;
+		}
 		case "mirrorToX":
 			settings = await updateSettings((x) => {
 				x.mirrorToX = a.on;
@@ -335,6 +439,7 @@ function scheduleScan(els?: Iterable<HTMLElement>): void {
 		const batch = [...dirty];
 		dirty.clear();
 		for (const el of batch) if (el.isConnected) evaluate(el);
+		updateThreadBar();
 	});
 }
 
@@ -373,6 +478,11 @@ chrome.storage.onChanged.addListener((changes, area) => {
 		if (!settings.enabled) clearAll();
 		rescanAll();
 	}
+	store.mergeFromStorage(changes);
+	if (changes[FEEDBACK_KEY]) {
+		feedback = (changes[FEEDBACK_KEY].newValue as FeedbackMap) ?? {};
+		rescanAll();
+	}
 	if (changes[ABOUT_CLEARED_KEY]) {
 		store.reset();
 		rescanAll();
@@ -384,7 +494,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
 injectPageScript();
 
 async function boot(): Promise<void> {
-	[settings] = await Promise.all([loadSettings(), store.load()]);
+	[settings, feedback] = await Promise.all([loadSettings(), loadFeedback(), store.load()]);
 	ensureStyles();
 	await FocusMode.initFocusMode();
 	if (document.body) observeDom();
