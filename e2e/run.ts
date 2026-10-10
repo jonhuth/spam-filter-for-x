@@ -26,6 +26,15 @@ const ctx = await chromium.launchPersistentContext("", {
 });
 
 const aboutHits: Record<string, number> = {};
+const xState = {
+	words: new Map([
+		["crypto giveaway", "1"],
+		["gm", "2"],
+	]),
+	muted: new Set(["spam_lord"]),
+	blocked: new Set(["scammer1", "scammer2"]),
+	nextId: 10,
+};
 await ctx.route("https://x.com/**", async (route) => {
 	const url = new URL(route.request().url());
 	if (url.pathname.endsWith("/TweetDetail")) return route.fulfill({ json: tweetDetail() });
@@ -40,12 +49,21 @@ await ctx.route("https://x.com/**", async (route) => {
 			},
 		});
 	}
-	if (url.pathname === "/i/api/1.1/mutes/keywords/list.json")
-		return route.fulfill({ json: { muted_keywords: [{ keyword: "crypto giveaway" }, { keyword: "gm" }] } });
-	if (url.pathname === "/i/api/1.1/mutes/users/list.json")
-		return route.fulfill({ json: { users: [{ screen_name: "Spam_Lord" }], next_cursor_str: "0" } });
-	if (url.pathname === "/i/api/1.1/blocks/list.json")
-		return route.fulfill({ json: { users: [{ screen_name: "scammer1" }, { screen_name: "scammer2" }], next_cursor_str: "0" } });
+	// Stateful fake of the user's X mutes/blocks (list + create/destroy).
+	const p = url.pathname;
+	const form = new URLSearchParams(route.request().postData() ?? "");
+	const users = (set: Set<string>) => ({ users: [...set].map((screen_name) => ({ screen_name })), next_cursor_str: "0" });
+	if (p === "/i/api/1.1/mutes/keywords/list.json")
+		return route.fulfill({ json: { muted_keywords: [...xState.words].map(([keyword, id]) => ({ keyword, id_str: id })) } });
+	if (p === "/i/api/1.1/mutes/users/list.json") return route.fulfill({ json: users(xState.muted) });
+	if (p === "/i/api/1.1/blocks/list.json") return route.fulfill({ json: users(xState.blocked) });
+	if (p === "/i/api/1.1/mutes/keywords/create.json") xState.words.set(form.get("keyword")!, String(xState.nextId++));
+	if (p === "/i/api/1.1/mutes/keywords/destroy.json")
+		for (const [w, id] of xState.words) if (id === form.get("ids")) xState.words.delete(w);
+	if (p === "/i/api/1.1/mutes/users/create.json") xState.muted.add(form.get("screen_name")!);
+	if (p === "/i/api/1.1/mutes/users/destroy.json") xState.muted.delete(form.get("screen_name")!);
+	if (p === "/i/api/1.1/blocks/create.json") xState.blocked.add(form.get("screen_name")!);
+	if (p === "/i/api/1.1/blocks/destroy.json") xState.blocked.delete(form.get("screen_name")!);
 	if (url.pathname.startsWith("/i/api/")) return route.fulfill({ status: 200, json: {} });
 	return route.fulfill({ contentType: "text/html", body: mockPage() });
 });
@@ -194,11 +212,12 @@ await popup.locator("#tab-btn-lists").click();
 await popup.waitForTimeout(100);
 const tabCount = async (name: string) =>
 	(await popup.getByRole("tab", { name: new RegExp(`^${name}`) }).locator(".n").textContent())?.trim();
-check((await tabCount("Muted")) === "0" && (await tabCount("Blocked")) === "1", "block moved the account from Muted to Blocked");
+check((await tabCount("Muted")) === "1" && (await tabCount("Blocked")) === "3", "X’s mutes/blocks synced in on load; block moved @my_friend from Muted to Blocked");
 await popup.locator('textarea[aria-label="Add to Muted words"]').fill("god bless, airdrop");
 await popup.locator('textarea[aria-label="Add to Muted words"]').press("Enter");
 await popup.waitForTimeout(200);
-check((await popup.locator(".lm-row").count()) === 2, "comma-separated muted words added in one step");
+const popupWords = await popup.locator(".lm-row span").allTextContents();
+check(["god bless", "airdrop", "crypto giveaway", "gm"].every((w) => popupWords.includes(w)), "comma-separated muted words added in one step, X’s words already there");
 await popup.screenshot({ path: join(out, "popup-lists.png"), fullPage: true });
 
 // ── Declutter: Calm preset + counts, then check each distraction on the page ──
@@ -258,20 +277,41 @@ check(await mgr.getByRole("dialog", { name: "Mutes and blocks" }).isVisible(), "
 await mgr.locator("textarea").fill("airdrop\nfree usdt, 100x");
 await mgr.locator("textarea").press("Enter");
 await tab.waitForTimeout(300);
-// popup already added "god bless" + "airdrop"; the paste adds 2 new (airdrop is a duplicate)
 await mgr.locator("textarea").blur();
-check((await mgr.locator(".lm-row").count()) === 4, "pasting a list adds every word in one go, no duplicates");
-await mgr.getByRole("button", { name: /Import my mutes & blocks from X/ }).click();
+const words = async () => mgr.locator(".lm-row span").allTextContents();
+check((await words()).length === 6, "pasting a list adds every word in one go, no duplicates");
 
-await mgr.locator(".lm-status", { hasText: /Imported|Couldn/ }).waitFor({ timeout: 15_000 }).catch(() => {});
-const status = await mgr.locator(".lm-status").textContent();
-check(Boolean(status?.includes("Imported 2 words, 1 muted, 2 blocked")), `import from X: “${status}”`);
-await mgr.getByRole("tab", { name: /Blocked/ }).click();
-check(Boolean(await mgr.getByText("@scammer1").isVisible()), "imported blocks listed");
+// Two-way sync with X
+const syncAndWait = async () => {
+	await mgr.getByRole("button", { name: "Sync now" }).click();
+	await tab.waitForFunction(
+		() => !document.querySelector("sfx-manager")?.shadowRoot?.querySelector(".lm-status")?.textContent?.includes("Syncing"),
+		null,
+		{ timeout: 20_000 },
+	);
+	await tab.waitForTimeout(300);
+};
+await syncAndWait();
+check(Boolean((await mgr.locator(".lm-foot").textContent())?.includes("Synced with X just now")), "Sync now reports success (once)");
+check((await mgr.locator(".lm-status").textContent()) === "", "no duplicate status line");
+check(["god bless", "airdrop", "free usdt", "100x"].every((w) => xState.words.has(w)), "words added here are muted on X");
+check(xState.blocked.has("my_friend"), "account blocked here is blocked on X");
 await tab.screenshot({ path: join(out, "manager-desktop.png") });
+
+await mgr.getByRole("tab", { name: /Blocked/ }).click();
 await mgr.getByRole("button", { name: "Remove @scammer1" }).click();
-await tab.waitForTimeout(300);
 check((await mgr.locator(".lm-row", { hasText: "@scammer1" }).count()) === 0, "× removes in one tap");
+await tab.waitForFunction(() => true, null, { timeout: 100 });
+for (let i = 0; i < 30 && xState.blocked.has("scammer1"); i++) await tab.waitForTimeout(250);
+check(!xState.blocked.has("scammer1"), "removing here unblocks on X automatically");
+
+// Change made on X (e.g. in the X app) flows back here.
+xState.words.set("x_side_word", String(xState.nextId++));
+xState.words.delete("gm");
+await mgr.getByRole("tab", { name: /Words/ }).click();
+await syncAndWait();
+const after = await words();
+check(after.includes("x_side_word") && !after.includes("gm"), "word added on X appears here; word unmuted on X disappears here");
 await tab.keyboard.press("Escape");
 await tab.waitForTimeout(200);
 check((await tab.locator("sfx-manager").count()) === 0, "Escape closes the manager");

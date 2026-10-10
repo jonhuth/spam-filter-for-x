@@ -37,6 +37,7 @@ import { openManager } from "./manager";
 import { type MenuAction, openMenu, toast } from "./menu";
 import { applyVisibility, clearAll, ensureStyles, renderChips, renderThreadBar } from "./render";
 import { ABOUT_CLEARED_KEY, Store } from "./store";
+import { listsSig, runSync, type SyncStatus } from "./xsync";
 
 const nonce = crypto.randomUUID();
 const store = new Store();
@@ -121,6 +122,10 @@ const aboutQueue = new AboutQueue(
 	(handle) => store.markFailed(handle),
 );
 
+const managerDeps = {
+	syncNow: () => syncNow(),
+};
+
 async function importFromX() {
 	const res = await request<Extract<PageToContent, { kind: "importResult" }>>(
 		(reqId) => ({ kind: "importLists", reqId }),
@@ -129,7 +134,7 @@ async function importFromX() {
 	return res?.lists ?? null;
 }
 
-async function mirrorToX(action: XAction, target: string): Promise<boolean> {
+async function pushX(action: XAction, target: string): Promise<boolean> {
 	const res = await request<Extract<PageToContent, { kind: "xActionResult" }>>((reqId) => ({
 		kind: "xAction",
 		reqId,
@@ -137,6 +142,30 @@ async function mirrorToX(action: XAction, target: string): Promise<boolean> {
 		target,
 	}));
 	return Boolean(res?.ok);
+}
+
+// ── Two-way sync with X ─────────────────────────────────────────────────
+let syncTimer: ReturnType<typeof setTimeout> | null = null;
+let syncing: Promise<SyncStatus | null> | null = null;
+let lastSig = "";
+
+function scheduleSync(delayMs = 2_000): void {
+	if (syncTimer) clearTimeout(syncTimer);
+	syncTimer = setTimeout(() => {
+		syncTimer = null;
+		void syncNow();
+	}, delayMs);
+}
+
+async function syncNow(): Promise<SyncStatus | null> {
+	if (syncing) return syncing;
+	syncing = runSync({ readX: importFromX, pushX }).finally(() => {
+		syncing = null;
+	});
+	const status = await syncing;
+	settings = await loadSettings();
+	lastSig = listsSig(settings);
+	return status;
 }
 
 // ── Evaluation ────────────────────────────────────────────────────────────
@@ -323,7 +352,7 @@ function showMenu(
 			isTrusted: hasEntry(s, "trustedAccounts", handle),
 			isCountryHidden: Boolean(place && hasEntry(s, "hiddenCountries", place.name)),
 			isCountryWatched: Boolean(place && hasEntry(s, "watchCountries", place.name)),
-			mirrorToX: s.mirrorToX,
+			syncWithX: s.syncWithX,
 			vote: feedback[handle]?.vote ?? null,
 			selectedText: window.getSelection()?.toString().trim() || "",
 		},
@@ -363,20 +392,10 @@ async function runAction(
 		case "block": {
 			const list: ListName = a.type === "mute" ? "mutedAccounts" : "blockedAccounts";
 			await setEntry(list, handle, a.on);
-			const xAction = (on: boolean): XAction =>
-				a.type === "mute" ? (on ? "mute" : "unmute") : on ? "block" : "unblock";
-			let mirrored = false;
-			let suffix = "";
-			if (s.mirrorToX) {
-				mirrored = await mirrorToX(xAction(a.on), handle);
-				suffix = mirrored ? " here and on X" : " here (X didn’t respond)";
-			}
 			const verb =
 				a.type === "mute" ? (a.on ? "Muted" : "Unmuted") : a.on ? "Blocked" : "Unblocked";
-			toast(`${verb} ${at}${suffix}`, () => {
-				void setEntry(list, handle, !a.on);
-				if (mirrored) void mirrorToX(xAction(!a.on), handle);
-			});
+			const where = s.syncWithX ? " · syncing to X" : "";
+			toast(`${verb} ${at}${where}`, () => void setEntry(list, handle, !a.on));
 			break;
 		}
 		case "trust":
@@ -398,11 +417,10 @@ async function runAction(
 		}
 		case "muteWord": {
 			await setEntry("mutedWords", a.word, true);
-			// X's keyword unmute needs X's own id, so a mirrored word mute has no
-			// one-tap undo here; it can be removed in X's settings.
-			if (s.mirrorToX && (await mirrorToX("muteWord", a.word)))
-				toast(`Muted “${a.word}” here and on X`);
-			else toast(`Muted “${a.word}”`, () => void setEntry("mutedWords", a.word, false));
+			toast(
+				`Muted “${a.word}”${s.syncWithX ? " · syncing to X" : ""}`,
+				() => void setEntry("mutedWords", a.word, false),
+			);
 			break;
 		}
 		case "vote": {
@@ -427,12 +445,13 @@ async function runAction(
 			break;
 		}
 		case "manage":
-			void openManager(importFromX);
+			void openManager(managerDeps);
 			break;
-		case "mirrorToX":
+		case "syncWithX":
 			settings = await updateSettings((x) => {
-				x.mirrorToX = a.on;
+				x.syncWithX = a.on;
 			});
+			if (a.on) scheduleSync(0);
 			break;
 	}
 }
@@ -489,6 +508,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
 		settings = sanitize(changes[SETTINGS_KEY].newValue);
 		if (!settings.enabled) clearAll();
 		rescanAll();
+		if (settings.syncWithX && listsSig(settings) !== lastSig) scheduleSync();
 	}
 	store.mergeFromStorage(changes);
 	if (changes[FEEDBACK_KEY]) {
@@ -515,14 +535,21 @@ async function boot(): Promise<void> {
 		(e) => {
 			if (e.altKey && e.code === "KeyM" && !e.metaKey && !e.ctrlKey) {
 				e.preventDefault();
-				void openManager(importFromX);
+				void openManager(managerDeps);
 			}
 		},
 		true,
 	);
-	chrome.runtime.onMessage.addListener((msg) => {
-		if (msg?.type === "openManager") void openManager(importFromX);
+	chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
+		if (msg?.type === "openManager") void openManager(managerDeps);
+		if (msg?.type === "syncNow") {
+			void syncNow().then((st) => reply({ status: st }));
+			return true;
+		}
 	});
+	lastSig = settings ? listsSig(settings) : "";
+	scheduleSync(4_000);
+	setInterval(() => scheduleSync(0), 10 * 60_000);
 	if (document.body) observeDom();
 	else document.addEventListener("DOMContentLoaded", observeDom, { once: true });
 }

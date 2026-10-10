@@ -57,6 +57,10 @@ backend/       PARKED; not used by the extension. Slated for retirement (nas con
 - **Declutter:** add a distraction by adding one entry to `TOGGLES` in `content/declutter.ts`
   (key, label, group, css gated by `html.sfx-t-<key>`). X's unlabeled parts get `data-sfx-*` tags
   from the throttled labeler; labels are recomputed every pass (X recycles cells).
+- **X sync:** muted words / muted accounts / blocks sync both ways with the user's X account
+  (`core/sync.ts` three-way merge vs the last snapshot; `content/xsync.ts` runner). Invariants: a
+  failed or all-empty read never deletes; pushes capped per run; one tab syncs at a time; refused
+  pushes retry next run. Countries / trusted / watched stay local.
 - **Feedback:** 👍/👎 is a ±4 signal applied immediately and stored in `feedback_v4` for
   `bun run calibrate`.
 - **Safari:** prefer `chrome.*`; wrap storage in try/catch; no persistent background worker;

@@ -311,10 +311,12 @@
       <div id="lists"></div>
       <div class="row" style="margin-top:12px">
         <div class="row-copy">
-          <div class="row-label" id="mirror-label">Also mute/block on X</div>
-          <div class="meta">When you mute or block from a post</div>
+          <div class="row-label" id="sync-label">Sync with X</div>
+          <div class="meta" id="sync-status" aria-live="polite">Muted words, mutes and blocks match X both ways</div>
         </div>
-        <button class="switch" id="mirror-toggle" type="button" role="switch" aria-checked="false" aria-labelledby="mirror-label"></button>
+        <button class="switch" id="sync-toggle" type="button" role="switch" aria-checked="true" aria-labelledby="sync-label"></button>
+      </div>
+      <button class="btn btn--ghost" id="sync-now" type="button" style="width:100%;margin-top:8px">Sync now</button>
       </div>
     </div>
 
