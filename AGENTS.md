@@ -22,9 +22,11 @@ content/main.ts ─▶ Store (accounts, posts, 30d about cache) ─▶ core/deci
 ```text
 src/core/      pure, tested: xparse (all X layouts), country (flags, blocs), context (thread region,
                politics), text (slop features, duplicate clusters), score, decide
-src/shared/    settings (one typed object, v3 migration, lists), bridge (message types)
+src/shared/    settings (one typed object, v3 migration, lists), bridge (message types),
+               listsUI (mutes/blocks manager used by popup AND the on-page modal), feedback
 src/page/      page-world script (built to dist/page.js)
-src/content/   orchestrator, store, aboutQueue, dom (ALL X selectors), render, menu, focus.js (v3 port)
+src/content/   orchestrator, store, aboutQueue, dom (post selectors), render, menu,
+               declutter (toggle registry + ALL layout selectors), focus (runtime), manager (⌥M modal)
 src/popup/     Filter / Lists / Layout
 static/        manifest, popup.html, icons → copied into dist/
 test/          bun tests + fixtures of real X response shapes
@@ -52,6 +54,9 @@ backend/       PARKED; not used by the extension. Slated for retirement (nas con
 - **Lookups at feed scale:** About lookups are paced by X's `x-rate-limit-*` headers, riskiest
   first (`AboutQueue` priority), cached 30d in `about_v4:<char>` buckets that every tab merges
   live via `storage.onChanged` — one lookup per account across all tabs.
+- **Declutter:** add a distraction by adding one entry to `TOGGLES` in `content/declutter.ts`
+  (key, label, group, css gated by `html.sfx-t-<key>`). X's unlabeled parts get `data-sfx-*` tags
+  from the throttled labeler; labels are recomputed every pass (X recycles cells).
 - **Feedback:** 👍/👎 is a ±4 signal applied immediately and stored in `feedback_v4` for
   `bun run calibrate`.
 - **Safari:** prefer `chrome.*`; wrap storage in try/catch; no persistent background worker;

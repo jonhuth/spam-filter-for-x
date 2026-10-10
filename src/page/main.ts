@@ -228,11 +228,49 @@ async function runXAction(
 	}
 }
 
+/** Read the user's own mutes/blocks from X (paged, capped). */
+async function importLists(reqId: number): Promise<void> {
+	try {
+		await waitForHeaders();
+		const get = async (path: string) => {
+			const res = await originalFetch(path, { credentials: "include", headers: headers ?? {} });
+			if (!res.ok) throw new Error(String(res.status));
+			return res.json();
+		};
+		const users = async (base: string) => {
+			const out: string[] = [];
+			let cursor = "-1";
+			for (let page = 0; page < 15 && cursor !== "0"; page++) {
+				const body = await get(
+					`${base}?count=200&skip_status=true&include_entities=false&cursor=${cursor}`,
+				);
+				for (const u of body?.users ?? [])
+					if (u?.screen_name) out.push(String(u.screen_name).toLowerCase());
+				cursor = String(body?.next_cursor_str ?? "0");
+			}
+			return out;
+		};
+		const kw = await get("/i/api/1.1/mutes/keywords/list.json").catch(() => null);
+		const words = ((kw?.muted_keywords ?? []) as { keyword?: string }[])
+			.map((k) => String(k.keyword ?? "").trim())
+			.filter(Boolean);
+		const [muted, blocked] = await Promise.all([
+			users("/i/api/1.1/mutes/users/list.json").catch(() => [] as string[]),
+			users("/i/api/1.1/blocks/list.json").catch(() => [] as string[]),
+		]);
+		const ok = kw !== null || muted.length > 0 || blocked.length > 0;
+		send({ kind: "importResult", reqId, lists: ok ? { words, muted, blocked } : null });
+	} catch {
+		send({ kind: "importResult", reqId, lists: null });
+	}
+}
+
 window.addEventListener("message", (event) => {
 	if (event.source !== window || !isEnvelope<ContentToPage>(event.data, nonce, "toPage")) return;
 	const msg = event.data.msg;
 	if (msg.kind === "about") void fetchAbout(msg.reqId, msg.handle);
 	else if (msg.kind === "xAction") void runXAction(msg.reqId, msg.action, msg.target);
+	else if (msg.kind === "importLists") void importLists(msg.reqId);
 });
 
 send({ kind: "ready" });

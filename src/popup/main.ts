@@ -1,14 +1,22 @@
 // Popup: every setting and list one or two taps away. Writes settings to
 // storage; content scripts react via storage.onChanged.
 
-import { FocusMode } from "../content/focus.js";
+import {
+	CALM_PRESET,
+	DECLUTTER_KEY,
+	DEFAULT_DECLUTTER,
+	type DeclutterState,
+	type Group,
+	loadDeclutter,
+	saveDeclutter,
+	TOGGLES,
+} from "../content/declutter";
 import { ABOUT_BUCKET_PREFIX, clearAboutCache, readAboutCache } from "../content/store";
 import { BLOC_LABEL, type Bloc, resolvePlace } from "../core/country";
 import { FEEDBACK_KEY, loadFeedback } from "../shared/feedback";
+import { LISTS_CSS, mountListsUI } from "../shared/listsUI";
 import {
-	type ListName,
 	loadSettings,
-	normalizeEntry,
 	SETTINGS_KEY,
 	type Settings,
 	sanitize,
@@ -168,165 +176,82 @@ function renderQuickCountries(): void {
 
 // ── Lists tab ─────────────────────────────────────────────────────────────
 
-const LISTS: {
-	name: ListName;
-	title: string;
-	placeholder: string;
-	render: (v: string) => string;
-}[] = [
-	{ name: "mutedWords", title: "Muted words", placeholder: "word or phrase", render: (v) => v },
-	{
-		name: "mutedAccounts",
-		title: "Muted accounts",
-		placeholder: "@handle",
-		render: (v) => `@${v}`,
-	},
-	{
-		name: "blockedAccounts",
-		title: "Blocked accounts",
-		placeholder: "@handle",
-		render: (v) => `@${v}`,
-	},
-	{
-		name: "hiddenCountries",
-		title: "Hidden countries",
-		placeholder: "India, Nigeria…",
-		render: placeLabel,
-	},
-	{
-		name: "watchCountries",
-		title: "Watched countries (stricter scoring)",
-		placeholder: "country",
-		render: placeLabel,
-	},
-	{ name: "trustedAccounts", title: "Always show", placeholder: "@handle", render: (v) => `@${v}` },
-];
-
-function placeLabel(v: string): string {
-	const p = resolvePlace(v);
-	return p ? `${p.emoji} ${p.name}` : v;
-}
-
-const openGroups = new Set<ListName>(["mutedWords"]);
-
-function renderLists(): void {
-	const host = $("lists");
-	host.replaceChildren(
-		...LISTS.map((def) => {
-			const values = settings.lists[def.name];
-			const group = el("details", { className: "list-group", open: openGroups.has(def.name) });
-			group.addEventListener("toggle", () => {
-				if (group.open) openGroups.add(def.name);
-				else openGroups.delete(def.name);
-			});
-			const summary = el(
-				"summary",
-				{},
-				el("span", { textContent: def.title }),
-				el("span", { className: "count", textContent: String(values.length) }),
-			);
-			const input = el("input", {
-				className: "input",
-				placeholder: def.placeholder,
-				autocomplete: "off",
-			});
-			input.setAttribute("aria-label", `Add to ${def.title}`);
-			const form = el(
-				"form",
-				{ className: "input-row" },
-				input,
-				el("button", { className: "btn", type: "submit", textContent: "Add" }),
-			);
-			form.addEventListener("submit", (e) => {
-				e.preventDefault();
-				const entries = input.value
-					.split(/[,\n]/)
-					.map((v) => normalizeEntry(def.name, v))
-					.filter(Boolean);
-				if (!entries.length) return;
-				void save((s) => {
-					for (const v of entries) toggleEntry(s, def.name, v, true);
-				}).then(() =>
-					$("lists").querySelector<HTMLInputElement>(`[aria-label="Add to ${def.title}"]`)?.focus(),
-				);
-			});
-			const rows = values.map((v) => {
-				const remove = el("button", { className: "icon-btn", type: "button", textContent: "×" });
-				remove.setAttribute("aria-label", `Remove ${v}`);
-				remove.addEventListener(
-					"click",
-					() => void save((s) => toggleEntry(s, def.name, v, false)),
-				);
-				return el(
-					"div",
-					{ className: "list-row" },
-					el("span", { textContent: def.render(v) }),
-					remove,
-				);
-			});
-			group.append(summary, el("div", { className: "body" }, form, ...rows));
-			return group;
-		}),
-	);
-}
+$("open-manager").addEventListener("click", async () => {
+	try {
+		const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+		if (tab?.id) await chrome.tabs.sendMessage(tab.id, { type: "openManager" });
+		window.close();
+	} catch {
+		$("manager-status").textContent = "Open x.com first, then try again.";
+	}
+});
 
 // ── Layout tab ────────────────────────────────────────────────────────────
 
-const FOCUS_ROWS: [string, string][] = [
-	["hideForYouTab", "Hide For you"],
-	["forceFollowing", "Always Following"],
-	["hideNewsExplore", "Hide Explore"],
-	["hideTrends", "Hide Trends"],
-	["hideWhoToFollow", "Hide Who to follow"],
-	["hidePromoted", "Hide ads"],
-	["hideGrokNav", "Hide Grok"],
-	["hideCommunitiesNav", "Hide Communities"],
-	["hidePremiumUpsells", "Hide Premium upsells"],
-	["hideTopicsSpaces", "Hide Topics / Spaces"],
-];
+const GROUPS: Group[] = ["Feed", "Posts", "Sidebar", "Navigation"];
 
-const CALM = {
-	hideForYouTab: true,
-	forceFollowing: true,
-	hideNewsExplore: true,
-	hideTrends: true,
-	hideWhoToFollow: true,
-	hidePromoted: true,
-	hidePremiumUpsells: true,
-	hideTopicsSpaces: true,
-};
-
-async function renderFocus(state?: Record<string, unknown>): Promise<void> {
-	const s: Record<string, unknown> = state ?? (await FocusMode.loadFocusState());
-	$("focus-toggles").replaceChildren(
-		...FOCUS_ROWS.map(([key, label]) => {
-			const id = `focus-${key}`;
-			const sw = el("button", { type: "button", className: "switch" });
-			sw.setAttribute("role", "switch");
-			sw.setAttribute("aria-checked", String(Boolean(s[key])));
-			sw.setAttribute("aria-labelledby", id);
-			sw.addEventListener("click", async () =>
-				renderFocus(await FocusMode.saveFocusState({ [key]: !s[key] })),
-			);
-			return el(
-				"div",
-				{ className: "row" },
-				el("span", { className: "row-label", id, textContent: label }),
-				sw,
-			);
+async function renderFocus(state?: DeclutterState): Promise<void> {
+	const s = state ?? (await loadDeclutter());
+	const host = $("focus-toggles");
+	host.replaceChildren(
+		...GROUPS.map((g) => {
+			const section = el("section", {});
+			section.append(el("h2", { className: "section-label", textContent: g }));
+			const rows = TOGGLES.filter((t) => t.group === g).map((t) => {
+				const id = `focus-${t.key}`;
+				const sw = el("button", { type: "button", className: "switch" });
+				sw.setAttribute("role", "switch");
+				sw.setAttribute("aria-checked", String(s[t.key] === true));
+				sw.setAttribute("aria-labelledby", id);
+				sw.addEventListener("click", async () =>
+					renderFocus(await saveDeclutter({ [t.key]: !(s[t.key] === true) })),
+				);
+				const copy = el(
+					"div",
+					{ className: "row-copy" },
+					el("div", { className: "row-label", id, textContent: t.label }),
+				);
+				if (t.hint) copy.append(el("div", { className: "meta", textContent: t.hint }));
+				return el("div", { className: "row" }, copy, sw);
+			});
+			section.append(el("div", { className: "toggles" }, ...rows));
+			return section;
 		}),
 	);
-	$("calm-status").textContent = FocusMode.anyFocusEnabled(
-		s as ReturnType<typeof FocusMode.DEFAULT_FOCUS>,
-	)
-		? "Calm home is on."
-		: "";
+	// Time
+	const time = el("section", {});
+	time.append(el("h2", { className: "section-label", textContent: "Time" }));
+	const seg = el("div", { className: "seg" });
+	seg.setAttribute("role", "group");
+	seg.setAttribute("aria-label", "Daily time nudge");
+	for (const m of [0, 15, 30, 60, 90]) {
+		const b = el("button", { type: "button", textContent: m ? `${m}m` : "Off" });
+		b.setAttribute("aria-pressed", String(s.dailyLimitMin === m));
+		b.addEventListener("click", async () => renderFocus(await saveDeclutter({ dailyLimitMin: m })));
+		seg.append(b);
+	}
+	time.append(
+		el(
+			"div",
+			{ className: "field" },
+			el(
+				"div",
+				{ className: "field-head" },
+				el("span", { className: "row-label", textContent: "Daily time nudge" }),
+				el("span", { className: "meta", textContent: "gentle stop per day" }),
+			),
+			seg,
+		),
+	);
+	host.append(time);
+	const on = TOGGLES.filter((t) => s[t.key] === true).length;
+	$("calm-status").textContent = on ? `${on} distraction${on === 1 ? "" : "s"} hidden.` : "";
 }
 $("calm-enable").addEventListener("click", async () =>
-	renderFocus(await FocusMode.saveFocusState(CALM)),
+	renderFocus(await saveDeclutter(CALM_PRESET())),
 );
 $("calm-disable").addEventListener("click", async () =>
-	renderFocus(await FocusMode.saveFocusState(FocusMode.DEFAULT_FOCUS())),
+	renderFocus(await saveDeclutter(DEFAULT_DECLUTTER())),
 );
 
 // ── Misc ──────────────────────────────────────────────────────────────────
@@ -369,7 +294,6 @@ function render(): void {
 	renderSegments();
 	renderHomeBlocs();
 	renderQuickCountries();
-	renderLists();
 }
 
 let statsTimer: ReturnType<typeof setTimeout> | null = null;
@@ -377,6 +301,7 @@ let statsTimer: ReturnType<typeof setTimeout> | null = null;
 chrome.storage.onChanged.addListener((changes, area) => {
 	if (area !== "local") return;
 	if (changes[FEEDBACK_KEY]) void renderFeedbackCount();
+	if (changes[DECLUTTER_KEY]) void renderFocus();
 	if (changes[SETTINGS_KEY]) {
 		settings = sanitize(changes[SETTINGS_KEY].newValue);
 		render();
@@ -404,6 +329,10 @@ async function init(): Promise<void> {
 	render();
 	void renderFeedbackCount();
 	await renderFocus();
+	const css = document.createElement("style");
+	css.textContent = LISTS_CSS;
+	document.head.append(css);
+	await mountListsUI($("lists"));
 }
 
 void init();

@@ -20,11 +20,17 @@ export type PageToContent =
 			rate?: { remaining: number; resetAt: number };
 	  }
 	| { kind: "xActionResult"; reqId: number; ok: boolean; status: number }
+	| {
+			kind: "importResult";
+			reqId: number;
+			lists: { words: string[]; muted: string[]; blocked: string[] } | null;
+	  }
 	| { kind: "ready" };
 
 export type ContentToPage =
 	| { kind: "about"; reqId: number; handle: string }
-	| { kind: "xAction"; reqId: number; action: XAction; target: string };
+	| { kind: "xAction"; reqId: number; action: XAction; target: string }
+	| { kind: "importLists"; reqId: number };
 
 export interface Envelope<T> {
 	tag: typeof BRIDGE_TAG;

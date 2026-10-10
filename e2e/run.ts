@@ -40,6 +40,12 @@ await ctx.route("https://x.com/**", async (route) => {
 			},
 		});
 	}
+	if (url.pathname === "/i/api/1.1/mutes/keywords/list.json")
+		return route.fulfill({ json: { muted_keywords: [{ keyword: "crypto giveaway" }, { keyword: "gm" }] } });
+	if (url.pathname === "/i/api/1.1/mutes/users/list.json")
+		return route.fulfill({ json: { users: [{ screen_name: "Spam_Lord" }], next_cursor_str: "0" } });
+	if (url.pathname === "/i/api/1.1/blocks/list.json")
+		return route.fulfill({ json: { users: [{ screen_name: "scammer1" }, { screen_name: "scammer2" }], next_cursor_str: "0" } });
 	if (url.pathname.startsWith("/i/api/")) return route.fulfill({ status: 200, json: {} });
 	return route.fulfill({ contentType: "text/html", body: mockPage() });
 });
@@ -186,15 +192,99 @@ await popup.screenshot({ path: join(out, "popup-filter.png"), fullPage: true });
 check(((await popup.locator("#export-feedback").textContent()) ?? "").includes("(1)"), "popup shows 1 vote ready to export");
 await popup.locator("#tab-btn-lists").click();
 await popup.waitForTimeout(100);
-const mutedCount = await popup.locator("details.list-group").nth(1).locator(".count").textContent();
-check(mutedCount === "0", "block moved the account out of Muted");
-await popup.locator('input[aria-label="Add to Muted words"]').fill("god bless, airdrop");
-await popup.locator('input[aria-label="Add to Muted words"]').press("Enter");
-await popup.waitForTimeout(150);
-check((await popup.locator("details.list-group").first().locator(".list-row").count()) === 2, "comma-separated muted words added in one step");
+const tabCount = async (name: string) =>
+	(await popup.getByRole("tab", { name: new RegExp(`^${name}`) }).locator(".n").textContent())?.trim();
+check((await tabCount("Muted")) === "0" && (await tabCount("Blocked")) === "1", "block moved the account from Muted to Blocked");
+await popup.locator('textarea[aria-label="Add to Muted words"]').fill("god bless, airdrop");
+await popup.locator('textarea[aria-label="Add to Muted words"]').press("Enter");
+await popup.waitForTimeout(200);
+check((await popup.locator(".lm-row").count()) === 2, "comma-separated muted words added in one step");
 await popup.screenshot({ path: join(out, "popup-lists.png"), fullPage: true });
+
+// ── Declutter: Calm preset + counts, then check each distraction on the page ──
+await tab.setViewportSize({ width: 1280, height: 1000 });
+await tab.goto(`https://x.com/senate_watch/status/${ROOT_ID}`);
+await tab.waitForSelector("article .sfx-flag", { timeout: 30_000 });
+await tab.waitForTimeout(3_000);
+const vis = (sel: string) => tab.locator(sel).first().isVisible();
+check(await vis('nav a[href="/i/grok"]'), "before Calm: Grok nav visible");
+check(!(await tab.evaluate(() => (document.getElementById("vid") as HTMLVideoElement).paused)), "before: page can autoplay a video");
+await tab.evaluate(() => (document.getElementById("vid") as HTMLVideoElement).pause());
+
 await popup.locator("#tab-btn-layout").click();
+await popup.locator("#calm-enable").click();
+await popup.getByRole("switch", { name: "Hide like / repost / view counts" }).click();
+await popup.waitForTimeout(300);
 await popup.screenshot({ path: join(out, "popup-layout.png"), fullPage: true });
+await tab.waitForTimeout(800);
+
+const hidden: [string, string][] = [
+	['nav a[href="/i/grok"]', "Grok nav"],
+	['nav a[href="/explore"]', "Explore nav"],
+	['nav a[href="/i/premium_sign_up"]', "Premium nav"],
+	['[aria-label="Grok"]', "floating Grok button"],
+	['[aria-label="Chat"]', "floating Chat bubble"],
+	['article button[aria-label="Grok actions"]', "Grok button on posts"],
+	['article a[href$="/analytics"]', "view counts"],
+	["text=You might like", "sidebar You might like"],
+	["text=Cashtags with IBKR", "sidebar What’s happening + promoted trend"],
+	["text=Falcons 1-2", "sidebar sports widget"],
+	["text=Engagement bait from across X", "“Discover more” under the thread"],
+];
+for (const [sel, name] of hidden) check(!(await vis(sel)), `Calm hides ${name}`);
+check(await vis('[data-testid="SearchBox_Search_Input"]'), "search box kept");
+check(await vis('nav a[href="/notifications"]'), "Notifications nav kept");
+check(await vis('article a[href="/policy_nerd"]'), "thread replies above “Discover more” stay visible");
+check(await vis('article a[href="/senate_watch"]'), "the post itself stays visible");
+check(await vis('nav a[href="/i/chat"]'), "Chat nav kept (only the floating bubble hides)");
+const likeCount = await tab.locator('article [data-testid="like"] [data-testid="app-text-transition-container"]').first().evaluate((e) => getComputedStyle(e).visibility);
+check(likeCount === "hidden", "like counts hidden, buttons still usable");
+await tab.evaluate(() => {
+	const v = document.getElementById("vid") as HTMLVideoElement;
+	v.play().catch(() => {});
+});
+await tab.waitForTimeout(300);
+check(await tab.evaluate(() => (document.getElementById("vid") as HTMLVideoElement).paused), "autoplay without a tap is paused");
+await tab.screenshot({ path: join(out, "declutter-desktop.png"), fullPage: true });
+await popup.locator("#calm-disable").click();
+await tab.waitForTimeout(500);
+check(await vis('nav a[href="/i/grok"]'), "Reset brings everything back");
+
+// ── On-page manager: ⌥M, bulk add, import from X, remove ──
+await tab.keyboard.press("Alt+KeyM");
+await tab.waitForTimeout(400);
+const mgr = tab.locator("sfx-manager");
+check(await mgr.getByRole("dialog", { name: "Mutes and blocks" }).isVisible(), "⌥M opens the mutes & blocks manager");
+await mgr.locator("textarea").fill("airdrop\nfree usdt, 100x");
+await mgr.locator("textarea").press("Enter");
+await tab.waitForTimeout(300);
+// popup already added "god bless" + "airdrop"; the paste adds 2 new (airdrop is a duplicate)
+await mgr.locator("textarea").blur();
+check((await mgr.locator(".lm-row").count()) === 4, "pasting a list adds every word in one go, no duplicates");
+await mgr.getByRole("button", { name: /Import my mutes & blocks from X/ }).click();
+
+await mgr.locator(".lm-status", { hasText: /Imported|Couldn/ }).waitFor({ timeout: 15_000 }).catch(() => {});
+const status = await mgr.locator(".lm-status").textContent();
+check(Boolean(status?.includes("Imported 2 words, 1 muted, 2 blocked")), `import from X: “${status}”`);
+await mgr.getByRole("tab", { name: /Blocked/ }).click();
+check(Boolean(await mgr.getByText("@scammer1").isVisible()), "imported blocks listed");
+await tab.screenshot({ path: join(out, "manager-desktop.png") });
+await mgr.getByRole("button", { name: "Remove @scammer1" }).click();
+await tab.waitForTimeout(300);
+check((await mgr.locator(".lm-row", { hasText: "@scammer1" }).count()) === 0, "× removes in one tap");
+await tab.keyboard.press("Escape");
+await tab.waitForTimeout(200);
+check((await tab.locator("sfx-manager").count()) === 0, "Escape closes the manager");
+await tab.setViewportSize({ width: 390, height: 844 });
+await tab.keyboard.press("Alt+KeyM");
+await tab.waitForTimeout(400);
+await tab.screenshot({ path: join(out, "manager-mobile.png") });
+const fit = await tab.evaluate(() => {
+	const m = document.querySelector("sfx-manager")?.shadowRoot?.querySelector(".modal")?.getBoundingClientRect();
+	return { w: window.innerWidth, doc: document.documentElement.scrollWidth, left: m?.left, right: m?.right };
+});
+check(Boolean(fit.right !== undefined && fit.left! >= 0 && fit.right! <= fit.w), "manager fits on mobile");
+await tab.keyboard.press("Escape");
 
 check(errors.length === 0, `no page errors${errors.length ? `: ${errors.join("; ")}` : ""}`);
 await ctx.close();

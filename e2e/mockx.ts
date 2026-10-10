@@ -105,8 +105,14 @@ export function tweetDetail() {
 }
 
 export function aboutAccount(handle: string) {
-	const u = Object.values(users).find((x) => x.handle === handle);
-	if (!u) return { data: {} };
+	const u: MockUser = Object.values(users).find((x) => x.handle === handle) ?? {
+		handle,
+		name: handle,
+		followers: 50_000,
+		following: 500,
+		ageDays: 2000,
+		basedIn: "Brazil",
+	};
 	return {
 		data: {
 			user_result_by_screen_name: {
@@ -125,8 +131,14 @@ export function aboutAccount(handle: string) {
 }
 
 export function page(): string {
-	const article = (p: MockPost) => `
-<div data-testid="cellInnerDiv"><article data-testid="tweet" role="article" style="border-bottom:1px solid #eff3f4;padding:12px 16px">
+	let y = 0;
+	const cell = (inner: string, h = 120) => {
+		const out = `<div data-testid="cellInnerDiv" style="transform:translateY(${y}px)">${inner}</div>`;
+		y += h;
+		return out;
+	};
+	const article = (p: MockPost) =>
+		cell(`<article data-testid="tweet" role="article" style="border-bottom:1px solid #eff3f4;padding:12px 16px">
   <div data-testid="User-Name" style="display:flex;flex-direction:row;align-items:baseline">
     <div style="display:flex;flex-direction:row;flex-shrink:1;min-width:0">
       <div style="display:flex;flex-direction:column">
@@ -142,19 +154,50 @@ export function page(): string {
       <div style="display:flex;flex-direction:column"><a href="/${p.user.handle}" style="color:#536471;text-decoration:none">@${p.user.handle}</a></div>
       <span>·</span><a href="/${p.user.handle}/status/${p.id}"><time>1h</time></a>
     </div>
+    <button aria-label="Grok actions" style="margin-left:auto">◎</button>
   </div>
   <div data-testid="tweetText" style="margin-top:4px">${p.text}</div>
-</article></div>`;
+  <div role="group" style="display:flex;justify-content:space-between;color:#536471;margin-top:8px">
+    <button data-testid="reply">💬 <span data-testid="app-text-transition-container"><span>12</span></span></button>
+    <button data-testid="retweet">🔁 <span data-testid="app-text-transition-container"><span>34</span></span></button>
+    <button data-testid="like">♡ <span data-testid="app-text-transition-container"><span>560</span></span></button>
+    <a href="/${p.user.handle}/status/${p.id}/analytics" aria-label="7,800 views">📊 7.8K</a>
+  </div>
+</article>`);
+	const thread = posts.map(article).join("");
+	const discover =
+		cell(`<div style="padding:12px 16px"><h2 role="heading">Discover more</h2><span>Sourced from across X</span></div>`, 60) +
+		cell(`<article data-testid="tweet" role="article" style="padding:12px 16px"><div data-testid="User-Name"><a href="/viral_guy"><span>Viral Guy</span></a> <a href="/viral_guy">@viral_guy</a> <a href="/viral_guy/status/1900000000000000099"><time>2h</time></a></div><div data-testid="tweetText">Engagement bait from across X</div></article>`);
+	const nav = `<header role="banner" style="width:220px;padding:12px"><nav aria-label="Primary" role="navigation" style="display:flex;flex-direction:column;gap:10px">
+  <a href="/home">Home</a><a href="/explore">Explore</a>
+  <a href="/notifications" aria-label="Notifications (3 unread)">Notifications <div aria-label="3 unread items" style="display:inline-block;background:#1d9bf0;color:#fff;border-radius:9px;padding:0 5px">3</div></a>
+  <a href="/i/connect_people">Follow</a><a href="/i/chat">Chat</a><a href="/i/grok">Grok</a><a href="/i/premium_sign_up">Premium</a><a href="/i/communities">Communities</a><a href="/me">Profile</a>
+</nav></header>`;
+	const side = `<div data-testid="sidebarColumn" style="width:300px;padding:12px"><div><div><div class="list">
+  <div><form role="search"><input data-testid="SearchBox_Search_Input" placeholder="Search"></form></div>
+  <div><section><h2 role="heading">You might like</h2><div>@icebergy · Follow</div></section></div>
+  <div><section><h2 role="heading">What’s happening</h2><div data-testid="trend">Cashtags with IBKR · Promoted by Interactive Brokers</div><div data-testid="trend">Trending · Cloudflare</div></section></div>
+  <div><section><h2 role="heading">NFL</h2><div>Falcons 1-2 vs Saints</div></section></div>
+  <div><nav aria-label="Footer">Terms · Privacy</nav></div>
+</div></div></div></div>`;
+	const floating = `<div style="position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px">
+  <div style="position:fixed;right:16px;bottom:80px"><a aria-label="Grok" href="/i/grok">◎</a></div>
+  <div style="position:fixed;right:16px;bottom:16px"><button aria-label="Chat">💬</button></div>
+</div>`;
 	return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>X</title><style>body{margin:0;font:15px/1.4 -apple-system,system-ui,sans-serif;color:#0f1419;background:#fff}
-main{max-width:600px;margin:0 auto;border-left:1px solid #eff3f4;border-right:1px solid #eff3f4;min-height:100vh}</style></head>
-<body><main id="timeline"></main>
+.app{display:flex;justify-content:center}
+main{width:600px;max-width:100%;border-left:1px solid #eff3f4;border-right:1px solid #eff3f4;min-height:100vh}
+@media (max-width:1000px){header[role=banner],[data-testid=sidebarColumn]{display:none}}</style></head>
+<body><div class="app">${nav}<main data-testid="primaryColumn"><div id="timeline"></div><video id="vid" muted playsinline width="160" height="90"></video></main>${side}</div>${floating}
 <script>
   // X loads data via GraphQL with an auth header, then renders.
   setTimeout(async () => {
     await fetch('/i/api/graphql/MockDetailId/TweetDetail?variables=%7B%7D', { headers: { authorization: 'Bearer mock', 'x-csrf-token': 'mock' } });
-    document.getElementById('timeline').innerHTML = ${JSON.stringify(posts.map(article).join(""))};
+    document.getElementById('timeline').innerHTML = ${JSON.stringify(thread + discover)};
   }, 300);
+  // Autoplay attempt without a user gesture.
+  setTimeout(() => { const v = document.getElementById('vid'); v.play().catch(() => {}); window.__autoplayTried = true; }, 2500);
 </script></body></html>`;
 }
 

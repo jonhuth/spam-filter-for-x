@@ -14,7 +14,8 @@ x.com only. Not Desloppify (all-web slop).
 - Reply threads fold every low-quality reply into one bar: "18 low-quality replies hidden · 🇳🇬 6 · 🇮🇳 5 · Show all".
 - Tap any flag or badge to vote 👍/👎, mute, block, trust, hide a country, or mute a word in one tap. Undo is in the toast.
 - Country lookups are cached on-device for 30 days and shared across tabs, paced by X's own rate limits.
-- Hide X chrome (For you, Explore, trends, Who to follow, ads, …)
+- 20+ one-tap distraction toggles (Calm preset): For you, ads, Who to follow, “Discover more”, reposts, video autoplay, like/view counts, Grok buttons, floating Grok/Chat bubbles, sidebar modules, nav extras, notification counts — plus a daily time nudge.
+- Mutes & blocks manager on the page (⌥M or the post menu) and in the popup: paste lists, search, one-tap remove, import your existing mutes/blocks from X.
 - Everything runs and is stored on your device. People you follow are never scored.
 
 ## Chrome
