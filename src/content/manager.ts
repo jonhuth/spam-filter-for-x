@@ -3,6 +3,7 @@
 
 import { LISTS_CSS, mountListsUI } from "../shared/listsUI";
 import type { ListName } from "../shared/settings";
+import { describeStatus, loadSyncStatus, type SyncStatus } from "./xsync";
 
 const CSS = `
 :host{all:initial}
@@ -46,10 +47,11 @@ export function closeManager(): void {
 	document.removeEventListener("keydown", onEscape, true);
 }
 
-export async function openManager(
-	importFromX: () => Promise<{ words: string[]; muted: string[]; blocked: string[] } | null>,
-	initialTab?: ListName,
-): Promise<void> {
+export interface ManagerDeps {
+	syncNow: () => Promise<SyncStatus | null>;
+}
+
+export async function openManager(deps: ManagerDeps, initialTab?: ListName): Promise<void> {
 	closeManager();
 	const host = document.createElement("sfx-manager");
 	const root = host.attachShadow({ mode: "open" });
@@ -77,7 +79,7 @@ export async function openManager(
 	body.className = "body";
 	const hint = document.createElement("div");
 	hint.className = "hint";
-	hint.textContent = "Applies instantly on this device. ⌥M opens this anywhere on X.";
+	hint.textContent = "Words, mutes and blocks stay in sync with X. ⌥M opens this anywhere on X.";
 	modal.append(head, body, hint);
 	scrim.append(modal);
 	scrim.addEventListener("click", (e) => {
@@ -89,7 +91,14 @@ export async function openManager(
 	});
 	root.append(style, scrim);
 	document.documentElement.append(host);
-	const unmount = await mountListsUI(body, { importFromX, initialTab });
+	const unmount = await mountListsUI(body, {
+		initialTab,
+		syncNow: async () => {
+			const st = await deps.syncNow();
+			return st ? describeStatus(st) : null;
+		},
+		syncStatus: async () => describeStatus(await loadSyncStatus()),
+	});
 	open = { host, unmount };
 	document.addEventListener("keydown", onEscape, true);
 	(root.querySelector("textarea") as HTMLTextAreaElement | null)?.focus();

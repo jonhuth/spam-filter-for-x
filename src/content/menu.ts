@@ -16,7 +16,7 @@ export interface MenuModel {
 	isCountryHidden: boolean;
 	isCountryWatched: boolean;
 	vote: "fine" | "spam" | null;
-	mirrorToX: boolean;
+	syncWithX: boolean;
 	selectedText: string;
 }
 
@@ -24,7 +24,7 @@ export type MenuAction =
 	| { type: "mute" | "block" | "trust"; on: boolean }
 	| { type: "hideCountry" | "watchCountry"; on: boolean }
 	| { type: "muteWord"; word: string }
-	| { type: "mirrorToX"; on: boolean }
+	| { type: "syncWithX"; on: boolean }
 	| { type: "vote"; vote: "fine" | "spam" | null }
 	| { type: "manage" };
 
@@ -248,16 +248,16 @@ export function openMenu(anchor: HTMLElement, m: MenuModel, act: (a: MenuAction)
 	const mirror = document.createElement("div");
 	mirror.className = "mirror";
 	const ml = document.createElement("span");
-	ml.textContent = "Also mute/block on X";
+	ml.textContent = "Sync mutes & blocks with X";
 	const sw = document.createElement("button");
 	sw.className = "switch";
 	sw.setAttribute("role", "switch");
-	sw.setAttribute("aria-checked", String(m.mirrorToX));
-	sw.setAttribute("aria-label", "Also mute or block on X");
+	sw.setAttribute("aria-checked", String(m.syncWithX));
+	sw.setAttribute("aria-label", "Sync mutes and blocks with X");
 	sw.addEventListener("click", () => {
 		const next = sw.getAttribute("aria-checked") !== "true";
 		sw.setAttribute("aria-checked", String(next));
-		act({ type: "mirrorToX", on: next });
+		act({ type: "syncWithX", on: next });
 	});
 	mirror.append(ml, sw);
 	menu.append(mirror);

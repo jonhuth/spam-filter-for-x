@@ -29,8 +29,8 @@ export interface Settings {
 	sensitivity: Sensitivity;
 	/** Repliers from these blocs never count as off-region. */
 	homeBlocs: Bloc[];
-	/** Also apply mute/block on X itself when used from the post menu. */
-	mirrorToX: boolean;
+	/** Two-way sync of muted words / muted accounts / blocks with X. */
+	syncWithX: boolean;
 	lists: Lists;
 	onboardingDismissed: boolean;
 	updatedAt: number;
@@ -43,7 +43,7 @@ export const DEFAULT_SETTINGS = (): Settings => ({
 	slopAction: "collapse",
 	sensitivity: "balanced",
 	homeBlocs: [],
-	mirrorToX: false,
+	syncWithX: true,
 	lists: {
 		mutedWords: [],
 		mutedAccounts: [],
@@ -113,7 +113,7 @@ export function sanitize(raw: unknown): Settings {
 			? (r.sensitivity as Sensitivity)
 			: base.sensitivity,
 		homeBlocs: Array.isArray(r.homeBlocs) ? r.homeBlocs : base.homeBlocs,
-		mirrorToX: r.mirrorToX ?? base.mirrorToX,
+		syncWithX: r.syncWithX ?? base.syncWithX,
 		lists: Object.fromEntries(
 			LIST_NAMES.map((n) => [n, cleanList(n, lists[n])]),
 		) as unknown as Lists,

@@ -92,8 +92,10 @@ export const LISTS_CSS = `
 `;
 
 export interface ListsUIOptions {
-	/** Present only on x.com: pull X's own mutes/blocks into the lists. */
-	importFromX?: () => Promise<{ words: string[]; muted: string[]; blocked: string[] } | null>;
+	/** Sync with X now; resolves to a human status line (null → couldn't). */
+	syncNow?: () => Promise<string | null>;
+	/** Current sync status line, shown under the list. */
+	syncStatus?: () => Promise<string>;
 	initialTab?: ListName;
 }
 
@@ -239,28 +241,34 @@ export async function mountListsUI(
 	function renderFoot(): void {
 		foot.replaceChildren();
 		const def = LIST_DEFS.find((d) => d.name === current)!;
-		if (
-			opts.importFromX &&
-			(current === "mutedWords" || current === "mutedAccounts" || current === "blockedAccounts")
-		) {
-			const imp = el("button", "lm-link", "Import my mutes & blocks from X");
-			imp.type = "button";
-			imp.addEventListener("click", async () => {
-				status.textContent = "Importing from X…";
-				const got = await opts.importFromX!().catch(() => null);
-				if (!got) {
-					status.textContent = "Couldn’t read your lists from X. Try again on x.com.";
-					return;
-				}
-				await save((s) => {
-					for (const w of got.words) toggleEntry(s, "mutedWords", w, true);
-					for (const h of got.muted) toggleEntry(s, "mutedAccounts", h, true);
-					for (const h of got.blocked) toggleEntry(s, "blockedAccounts", h, true);
-				});
-				status.textContent = `Imported ${got.words.length} words, ${got.muted.length} muted, ${got.blocked.length} blocked.`;
+		const synced =
+			current === "mutedWords" || current === "mutedAccounts" || current === "blockedAccounts";
+		if (synced && settings.syncWithX && opts.syncStatus) {
+			const line = el("span", undefined, "");
+			void opts.syncStatus().then((t) => {
+				line.textContent = `⇅ ${t}`;
 			});
-			foot.append(imp);
+			foot.append(line);
 		}
+		if (synced && settings.syncWithX && opts.syncNow) {
+			const now = el("button", "lm-link", "Sync now");
+			now.type = "button";
+			now.addEventListener("click", async () => {
+				status.textContent = "Syncing with X…";
+				const line = await opts.syncNow!().catch(() => null);
+				// Success shows in the footer's sync line; only problems go in the status.
+				status.textContent =
+					line && !line.startsWith("Synced")
+						? line
+						: line
+							? ""
+							: "Couldn’t reach X. Open x.com and try again.";
+				renderFoot();
+			});
+			foot.append(now);
+		}
+		if (synced && !settings.syncWithX)
+			foot.append(el("span", undefined, "Local only — sync with X is off"));
 		if (settings.lists[current].length) {
 			const copy = el("button", "lm-link", "Copy list");
 			copy.type = "button";

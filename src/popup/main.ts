@@ -12,6 +12,7 @@ import {
 	TOGGLES,
 } from "../content/declutter";
 import { ABOUT_BUCKET_PREFIX, clearAboutCache, readAboutCache } from "../content/store";
+import { describeStatus, loadSyncStatus, XSYNC_KEY } from "../content/xsync";
 import { BLOC_LABEL, type Bloc, resolvePlace } from "../core/country";
 import { FEEDBACK_KEY, loadFeedback } from "../shared/feedback";
 import { LISTS_CSS, mountListsUI } from "../shared/listsUI";
@@ -89,7 +90,24 @@ function setSwitch(id: string, on: boolean): void {
 
 $("enabled-toggle").addEventListener("click", () => void save((s) => (s.enabled = !s.enabled)));
 $("flags-toggle").addEventListener("click", () => void save((s) => (s.showFlags = !s.showFlags)));
-$("mirror-toggle").addEventListener("click", () => void save((s) => (s.mirrorToX = !s.mirrorToX)));
+$("sync-toggle").addEventListener("click", () => void save((s) => (s.syncWithX = !s.syncWithX)));
+$("sync-now").addEventListener("click", async () => {
+	$("sync-status").textContent = "Syncing with X…";
+	try {
+		const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+		const res = tab?.id ? await chrome.tabs.sendMessage(tab.id, { type: "syncNow" }) : null;
+		$("sync-status").textContent = res?.status
+			? describeStatus(res.status)
+			: "Open x.com in this tab to sync.";
+	} catch {
+		$("sync-status").textContent = "Open x.com in this tab to sync.";
+	}
+});
+async function renderSyncStatus(): Promise<void> {
+	$("sync-status").textContent = settings.syncWithX
+		? describeStatus(await loadSyncStatus())
+		: "Local only.";
+}
 
 for (const group of document.querySelectorAll<HTMLElement>(".seg[data-setting]")) {
 	const key = group.dataset.setting as "farmAction" | "slopAction" | "sensitivity";
@@ -289,7 +307,8 @@ $("clear-cache").addEventListener("click", async () => {
 function render(): void {
 	setSwitch("enabled-toggle", settings.enabled);
 	setSwitch("flags-toggle", settings.showFlags);
-	setSwitch("mirror-toggle", settings.mirrorToX);
+	setSwitch("sync-toggle", settings.syncWithX);
+	void renderSyncStatus();
 	$("onboarding").hidden = settings.onboardingDismissed;
 	renderSegments();
 	renderHomeBlocs();
@@ -301,6 +320,7 @@ let statsTimer: ReturnType<typeof setTimeout> | null = null;
 chrome.storage.onChanged.addListener((changes, area) => {
 	if (area !== "local") return;
 	if (changes[FEEDBACK_KEY]) void renderFeedbackCount();
+	if (changes[XSYNC_KEY]) void renderSyncStatus();
 	if (changes[DECLUTTER_KEY]) void renderFocus();
 	if (changes[SETTINGS_KEY]) {
 		settings = sanitize(changes[SETTINGS_KEY].newValue);

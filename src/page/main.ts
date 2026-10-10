@@ -196,6 +196,8 @@ const X_ACTIONS = {
 	block: ["/i/api/1.1/blocks/create.json", "screen_name"],
 	unblock: ["/i/api/1.1/blocks/destroy.json", "screen_name"],
 	muteWord: ["/i/api/1.1/mutes/keywords/create.json", "keyword"],
+	/** target = X's keyword id (from the list read) */
+	unmuteWord: ["/i/api/1.1/mutes/keywords/destroy.json", "ids"],
 } as const;
 
 async function runXAction(
@@ -228,7 +230,10 @@ async function runXAction(
 	}
 }
 
-/** Read the user's own mutes/blocks from X (paged, capped). */
+/**
+ * Read the user's own mutes/blocks from X. All-or-nothing: if any part fails
+ * the whole read is null, so sync can never mistake a failed read for "empty".
+ */
 async function importLists(reqId: number): Promise<void> {
 	try {
 		await waitForHeaders();
@@ -240,26 +245,39 @@ async function importLists(reqId: number): Promise<void> {
 		const users = async (base: string) => {
 			const out: string[] = [];
 			let cursor = "-1";
-			for (let page = 0; page < 15 && cursor !== "0"; page++) {
+			for (let page = 0; page < 25 && cursor !== "0"; page++) {
 				const body = await get(
 					`${base}?count=200&skip_status=true&include_entities=false&cursor=${cursor}`,
 				);
-				for (const u of body?.users ?? [])
+				if (!Array.isArray(body?.users)) throw new Error("shape");
+				for (const u of body.users)
 					if (u?.screen_name) out.push(String(u.screen_name).toLowerCase());
 				cursor = String(body?.next_cursor_str ?? "0");
 			}
 			return out;
 		};
-		const kw = await get("/i/api/1.1/mutes/keywords/list.json").catch(() => null);
-		const words = ((kw?.muted_keywords ?? []) as { keyword?: string }[])
-			.map((k) => String(k.keyword ?? "").trim())
-			.filter(Boolean);
+		const kw = await get("/i/api/1.1/mutes/keywords/list.json");
+		if (!Array.isArray(kw?.muted_keywords)) throw new Error("shape");
+		const wordIds: Record<string, string> = {};
+		const words: string[] = [];
+		for (const k of kw.muted_keywords as {
+			keyword?: string;
+			id?: string | number;
+			id_str?: string;
+		}[]) {
+			const w = String(k.keyword ?? "")
+				.trim()
+				.toLowerCase();
+			if (!w) continue;
+			words.push(w);
+			const id = k.id_str ?? (k.id !== undefined ? String(k.id) : "");
+			if (id) wordIds[w] = id;
+		}
 		const [muted, blocked] = await Promise.all([
-			users("/i/api/1.1/mutes/users/list.json").catch(() => [] as string[]),
-			users("/i/api/1.1/blocks/list.json").catch(() => [] as string[]),
+			users("/i/api/1.1/mutes/users/list.json"),
+			users("/i/api/1.1/blocks/list.json"),
 		]);
-		const ok = kw !== null || muted.length > 0 || blocked.length > 0;
-		send({ kind: "importResult", reqId, lists: ok ? { words, muted, blocked } : null });
+		send({ kind: "importResult", reqId, lists: { words, muted, blocked, wordIds } });
 	} catch {
 		send({ kind: "importResult", reqId, lists: null });
 	}

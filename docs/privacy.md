@@ -10,7 +10,7 @@ We collect **nothing**. There is no Spam Filter for X account, no analytics SDK,
 
 - Location flags use X’s About Account data in your logged-in Safari/Chrome session.
 - Hide lists, location cache, bot verdicts, and chrome toggles stay in extension local storage on your device.
-- Mute, block, and muted-word lists stay on your device. If you turn on **Also mute/block on X**, that one action is sent to X using your own session, just as if you had used X's own menu.
+- Muted words, muted accounts, and blocked accounts sync with your own X account (on by default, switchable off). The extension reads and changes them through x.com using your logged-in session, the same requests X's own settings page makes. Nothing goes to any other server.
 - You can clear that data from the extension popup.
 
 ## What we do not do

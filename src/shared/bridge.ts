@@ -6,7 +6,15 @@ import type { AboutAccount, ParsedBatch } from "../core/types";
 
 export const BRIDGE_TAG = "sfx";
 
-export type XAction = "mute" | "unmute" | "block" | "unblock" | "muteWord";
+export type XAction = "mute" | "unmute" | "block" | "unblock" | "muteWord" | "unmuteWord";
+
+export interface XListsRead {
+	words: string[];
+	muted: string[];
+	blocked: string[];
+	/** keyword → X keyword id, needed to unmute a word on X */
+	wordIds: Record<string, string>;
+}
 
 export type PageToContent =
 	| { kind: "batch"; batch: ParsedBatch }
@@ -23,7 +31,7 @@ export type PageToContent =
 	| {
 			kind: "importResult";
 			reqId: number;
-			lists: { words: string[]; muted: string[]; blocked: string[] } | null;
+			lists: XListsRead | null;
 	  }
 	| { kind: "ready" };
 
