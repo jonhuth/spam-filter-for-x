@@ -25,7 +25,8 @@ export type MenuAction =
 	| { type: "hideCountry" | "watchCountry"; on: boolean }
 	| { type: "muteWord"; word: string }
 	| { type: "mirrorToX"; on: boolean }
-	| { type: "vote"; vote: "fine" | "spam" | null };
+	| { type: "vote"; vote: "fine" | "spam" | null }
+	| { type: "manage" };
 
 const CSS = `
 :host{all:initial}
@@ -222,6 +223,8 @@ export function openMenu(anchor: HTMLElement, m: MenuModel, act: (a: MenuAction)
 			() => act({ type: "watchCountry", on: !m.isCountryWatched }),
 		);
 	}
+
+	item("🗂️", "Manage mutes & blocks…", false, () => act({ type: "manage" }));
 
 	const word = document.createElement("form");
 	word.className = "word";

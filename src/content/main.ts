@@ -32,7 +32,8 @@ import {
 } from "../shared/settings";
 import { AboutQueue } from "./aboutQueue";
 import { focalPostId, readTweet, SEL } from "./dom";
-import { FocusMode } from "./focus.js";
+import { initFocus } from "./focus";
+import { openManager } from "./manager";
 import { type MenuAction, openMenu, toast } from "./menu";
 import { applyVisibility, clearAll, ensureStyles, renderChips, renderThreadBar } from "./render";
 import { ABOUT_CLEARED_KEY, Store } from "./store";
@@ -95,7 +96,7 @@ window.addEventListener("message", (event) => {
 		pageReady = true;
 		for (const m of outbox.splice(0)) toPage(m);
 	} else if (msg.kind === "batch") store.ingest(msg.batch);
-	else if (msg.kind === "about" || msg.kind === "xActionResult") {
+	else if (msg.kind === "about" || msg.kind === "xActionResult" || msg.kind === "importResult") {
 		pending.get(msg.reqId)?.(msg);
 		pending.delete(msg.reqId);
 	}
@@ -119,6 +120,14 @@ const aboutQueue = new AboutQueue(
 	{},
 	(handle) => store.markFailed(handle),
 );
+
+async function importFromX() {
+	const res = await request<Extract<PageToContent, { kind: "importResult" }>>(
+		(reqId) => ({ kind: "importLists", reqId }),
+		60_000,
+	);
+	return res?.lists ?? null;
+}
 
 async function mirrorToX(action: XAction, target: string): Promise<boolean> {
 	const res = await request<Extract<PageToContent, { kind: "xActionResult" }>>((reqId) => ({
@@ -417,6 +426,9 @@ async function runAction(
 			});
 			break;
 		}
+		case "manage":
+			void openManager(importFromX);
+			break;
 		case "mirrorToX":
 			settings = await updateSettings((x) => {
 				x.mirrorToX = a.on;
@@ -496,7 +508,21 @@ injectPageScript();
 async function boot(): Promise<void> {
 	[settings, feedback] = await Promise.all([loadSettings(), loadFeedback(), store.load()]);
 	ensureStyles();
-	await FocusMode.initFocusMode();
+	await initFocus();
+	// ⌥M (Alt+M) opens the mutes & blocks manager anywhere on X.
+	document.addEventListener(
+		"keydown",
+		(e) => {
+			if (e.altKey && e.code === "KeyM" && !e.metaKey && !e.ctrlKey) {
+				e.preventDefault();
+				void openManager(importFromX);
+			}
+		},
+		true,
+	);
+	chrome.runtime.onMessage.addListener((msg) => {
+		if (msg?.type === "openManager") void openManager(importFromX);
+	});
 	if (document.body) observeDom();
 	else document.addEventListener("DOMContentLoaded", observeDom, { once: true });
 }
