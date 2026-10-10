@@ -14,6 +14,8 @@ export const ABOUT_CLEARED_KEY = "about_cleared_at";
 const ABOUT_TTL = 30 * 86_400_000;
 const ABOUT_MISS_TTL = 86_400_000;
 const MAX_POSTS = 5_000;
+/** Per-bucket cap (~37 buckets → ~90k accounts, a few MB). Oldest lookups drop first. */
+const MAX_PER_BUCKET = 2_500;
 
 export const bucketOf = (handle: string) => `${ABOUT_BUCKET_PREFIX}${handle[0] ?? "_"}`;
 
@@ -133,7 +135,7 @@ export class Store {
 		this.saveTimer = setTimeout(() => {
 			this.saveTimer = null;
 			void this.save();
-		}, 10_000);
+		}, 2_000);
 	}
 
 	async save(): Promise<void> {
@@ -151,12 +153,43 @@ export class Store {
 				for (const [h, e] of this.about)
 					if (bucketOf(h) === key && (!merged[h] || merged[h].fetchedAt < e.fetchedAt))
 						merged[h] = e;
-				writes[key] = merged;
+				const entries = Object.entries(merged);
+				writes[key] =
+					entries.length > MAX_PER_BUCKET
+						? Object.fromEntries(
+								entries.sort((a, b) => b[1].fetchedAt - a[1].fetchedAt).slice(0, MAX_PER_BUCKET),
+							)
+						: merged;
 			}
 			await chrome.storage.local.set(writes);
 		} catch {
 			/* storage full or context invalidated */
 		}
+	}
+
+	/**
+	 * Merge lookups another tab just saved, so one tab's work flags every tab.
+	 * Returns handles whose location changed.
+	 */
+	mergeFromStorage(changes: Record<string, chrome.storage.StorageChange>): Set<string> {
+		const changed = new Set<string>();
+		const now = Date.now();
+		for (const [key, change] of Object.entries(changes)) {
+			if (!key.startsWith(ABOUT_BUCKET_PREFIX)) continue;
+			const bucket = (change.newValue ?? {}) as Record<string, AboutAccount>;
+			for (const [h, e] of Object.entries(bucket)) {
+				const mine = this.about.get(h);
+				if (isFresh(e, now) && (!mine || mine.fetchedAt < e.fetchedAt)) {
+					this.about.set(h, e);
+					this.failedAt.delete(h);
+					const account = this.accounts.get(h);
+					if (account) account.about = e;
+					changed.add(h);
+				}
+			}
+		}
+		if (changed.size) this.emit(changed);
+		return changed;
 	}
 
 	reset(): void {

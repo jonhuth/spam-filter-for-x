@@ -8,7 +8,8 @@ import { type Place, resolvePlace } from "./country";
 import { scorePost, type Verdict } from "./score";
 import type { Account, Post } from "./types";
 
-export type Visibility = "show" | "collapse" | "hide";
+/** "fold": hidden inside a thread's single summary bar. */
+export type Visibility = "show" | "collapse" | "hide" | "fold";
 
 export interface Decision {
 	visibility: Visibility;
@@ -31,6 +32,11 @@ export interface DecideInput {
 	settings: Settings;
 	/** The post the user opened on a status page — never hidden. */
 	isFocal?: boolean;
+	/** A reply inside the open thread: score-based hides fold into one bar. */
+	inThread?: boolean;
+	/** The user tapped "Show all" for this thread. */
+	threadRevealed?: boolean;
+	feedback?: "fine" | "spam";
 	now?: number;
 }
 
@@ -54,6 +60,7 @@ export function decide(input: DecideInput): Decision {
 		watchCountries: lists.watchCountries,
 		trusted,
 		sensitivity: s.sensitivity,
+		feedback: input.feedback,
 		now: input.now,
 	});
 
@@ -90,8 +97,8 @@ export function decide(input: DecideInput): Decision {
 
 	if (verdict.label === "farm" || verdict.label === "slop") {
 		const action = verdict.label === "farm" ? s.farmAction : s.slopAction;
-		const vis: Visibility =
-			action === "hide" ? "hide" : action === "collapse" ? "collapse" : "show";
+		let vis: Visibility = action === "hide" ? "hide" : action === "collapse" ? "collapse" : "show";
+		if (input.inThread && vis !== "show") vis = input.threadRevealed ? "show" : "fold";
 		const flag = place ? `${place.emoji} ` : "";
 		// Reasons may lead with the same flag; don't repeat it in the bar.
 		const reason = (verdict.signals[0]?.reason ?? "").replace(place ? `${place.emoji} ` : /^$/, "");

@@ -1,6 +1,6 @@
 {
 	"name": "spam-filter-for-x",
-	"version": "4.0.0",
+	"version": "4.1.0",
 	"private": true,
 	"type": "module",
 	"scripts": {
@@ -11,7 +11,8 @@
 		"lint": "biome check src test scripts e2e",
 		"check": "bun run typecheck && bun run lint && bun test && bun run build && bun run check:no-backend",
 		"check:no-backend": "bun scripts/check-no-backend.ts",
-		"e2e": "bun run build && bun e2e/run.ts"
+		"e2e": "bun run build && bun e2e/run.ts",
+		"calibrate": "bun scripts/calibrate.ts"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2",

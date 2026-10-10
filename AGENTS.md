@@ -47,6 +47,13 @@ backend/       PARKED; not used by the extension. Slated for retirement (nas con
   `docs/agent/x-graphql-schema.md`. Add a fixture before changing the parser.
 - **DOM drift:** selectors live only in `content/dom.ts`.
 - **Query ids:** learned from live traffic, then X's main bundle, then fallback constants.
+- **Threads:** on a status page, score-based hides fold into ONE summary bar on the first folded
+  reply in the DOM (X virtualizes the list — never insert rows). List-based hides never fold.
+- **Lookups at feed scale:** About lookups are paced by X's `x-rate-limit-*` headers, riskiest
+  first (`AboutQueue` priority), cached 30d in `about_v4:<char>` buckets that every tab merges
+  live via `storage.onChanged` — one lookup per account across all tabs.
+- **Feedback:** 👍/👎 is a ±4 signal applied immediately and stored in `feedback_v4` for
+  `bun run calibrate`.
 - **Safari:** prefer `chrome.*`; wrap storage in try/catch; no persistent background worker;
   don't commit generated Xcode projects.
 

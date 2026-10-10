@@ -10,7 +10,15 @@ export type XAction = "mute" | "unmute" | "block" | "unblock" | "muteWord";
 
 export type PageToContent =
 	| { kind: "batch"; batch: ParsedBatch }
-	| { kind: "about"; reqId: number; handle: string; about: AboutAccount | null; status: number }
+	| {
+			kind: "about";
+			reqId: number;
+			handle: string;
+			about: AboutAccount | null;
+			status: number;
+			/** From X's x-rate-limit-* headers. */
+			rate?: { remaining: number; resetAt: number };
+	  }
 	| { kind: "xActionResult"; reqId: number; ok: boolean; status: number }
 	| { kind: "ready" };
 

@@ -11,7 +11,9 @@ x.com only. Not Desloppify (all-web slop).
 
 - Flag every account with the country or region X says it is based in (🇺🇸 🇮🇳 🌏)
 - Hide farm accounts and collapse low-quality replies: AI-style, generic, copy-paste, and off-region accounts piling into another region's politics. Each one shows why.
-- Tap any flag or badge to mute, block, trust, hide a country, or mute a word in one tap. Undo is in the toast.
+- Reply threads fold every low-quality reply into one bar: "18 low-quality replies hidden · 🇳🇬 6 · 🇮🇳 5 · Show all".
+- Tap any flag or badge to vote 👍/👎, mute, block, trust, hide a country, or mute a word in one tap. Undo is in the toast.
+- Country lookups are cached on-device for 30 days and shared across tabs, paced by X's own rate limits.
 - Hide X chrome (For you, Explore, trends, Who to follow, ads, …)
 - Everything runs and is stored on your device. People you follow are never scored.
 

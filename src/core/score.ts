@@ -43,6 +43,8 @@ export interface ScoreInput {
 	/** Canonical names of countries the user wants weighted as suspicious. */
 	watchCountries?: string[];
 	trusted?: boolean;
+	/** Your own 👍/👎 on this account. */
+	feedback?: "fine" | "spam";
 	now?: number;
 	sensitivity?: Sensitivity;
 }
@@ -220,6 +222,15 @@ export function scorePost(input: ScoreInput): Verdict {
 		...textSignals(input.post, input.parentText, isReply),
 	];
 	if (a?.followsYou) signals.push({ id: "follows-you", weight: -2, reason: "Follows you" });
+	if (input.feedback === "fine")
+		signals.push({ id: "your-fine", weight: -4, reason: "You marked this account fine" });
+	if (input.feedback === "spam")
+		signals.push({
+			id: "your-spam",
+			weight: 4,
+			strong: true,
+			reason: "You marked this account spam",
+		});
 	if ((input.clusterSize ?? 0) >= 3)
 		signals.push({
 			id: "duplicate-cluster",

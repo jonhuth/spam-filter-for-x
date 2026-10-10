@@ -15,6 +15,7 @@ export interface MenuModel {
 	isTrusted: boolean;
 	isCountryHidden: boolean;
 	isCountryWatched: boolean;
+	vote: "fine" | "spam" | null;
 	mirrorToX: boolean;
 	selectedText: string;
 }
@@ -23,7 +24,8 @@ export type MenuAction =
 	| { type: "mute" | "block" | "trust"; on: boolean }
 	| { type: "hideCountry" | "watchCountry"; on: boolean }
 	| { type: "muteWord"; word: string }
-	| { type: "mirrorToX"; on: boolean };
+	| { type: "mirrorToX"; on: boolean }
+	| { type: "vote"; vote: "fine" | "spam" | null };
 
 const CSS = `
 :host{all:initial}
@@ -43,6 +45,10 @@ button.item{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:
 button.item:hover,button.item:focus-visible{background:var(--hover)}
 .ico{width:20px;text-align:center}
 .on{margin-left:auto;color:#1d9bf0;font-weight:700}
+.votes{display:flex;gap:6px;padding:4px 6px 6px}
+.votes button{all:unset;box-sizing:border-box;flex:1;text-align:center;padding:8px 6px;border-radius:10px;border:1px solid var(--line);cursor:pointer;font-weight:600;font-size:13px}
+.votes button:hover,.votes button:focus-visible{background:var(--hover)}
+.votes button[aria-pressed=true]{border-color:#1d9bf0;color:#1d9bf0;background:rgba(29,155,240,.1)}
 .word{display:flex;gap:6px;padding:6px 10px}
 .word input{flex:1;min-width:0;padding:7px 9px;border-radius:9px;border:1px solid var(--line);background:transparent;color:inherit;font:inherit}
 .word button{all:unset;padding:7px 12px;border-radius:999px;background:#1d9bf0;color:#fff;font-weight:650;cursor:pointer}
@@ -150,7 +156,24 @@ export function openMenu(anchor: HTMLElement, m: MenuModel, act: (a: MenuAction)
 		d.className = "sep";
 		return d;
 	};
-	menu.append(sep());
+	// One-tap verdict feedback: applied immediately, kept for calibration.
+	const votes = document.createElement("div");
+	votes.className = "votes";
+	for (const [vote, label] of [
+		["fine", "👍 Looks fine"],
+		["spam", "👎 Spam / slop"],
+	] as const) {
+		const b = document.createElement("button");
+		b.type = "button";
+		b.textContent = label;
+		b.setAttribute("aria-pressed", String(m.vote === vote));
+		b.addEventListener("click", () => {
+			closeMenu();
+			act({ type: "vote", vote: m.vote === vote ? null : vote });
+		});
+		votes.append(b);
+	}
+	menu.append(votes, sep());
 
 	const item = (icon: string, label: string, on: boolean, run: () => void) => {
 		const b = document.createElement("button");

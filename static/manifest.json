@@ -4,7 +4,10 @@
   "short_name": "Spam Filter",
   "version": "0.0.0",
   "description": "Hide bots, AI slop, spam countries, and clutter on X. All on-device.",
-  "permissions": ["storage"],
+  "permissions": [
+    "storage",
+    "unlimitedStorage"
+  ],
   "action": {
     "default_popup": "popup.html",
     "default_title": "Spam Filter for X",
@@ -21,18 +24,31 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "host_permissions": ["https://x.com/*", "https://twitter.com/*"],
+  "host_permissions": [
+    "https://x.com/*",
+    "https://twitter.com/*"
+  ],
   "content_scripts": [
     {
-      "matches": ["https://x.com/*", "https://twitter.com/*"],
-      "js": ["content.js"],
+      "matches": [
+        "https://x.com/*",
+        "https://twitter.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_start"
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["page.js"],
-      "matches": ["https://x.com/*", "https://twitter.com/*"]
+      "resources": [
+        "page.js"
+      ],
+      "matches": [
+        "https://x.com/*",
+        "https://twitter.com/*"
+      ]
     }
   ],
   "browser_specific_settings": {

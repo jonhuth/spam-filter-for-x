@@ -27,6 +27,13 @@ const CSS = `
 .sfx-badge[data-label="farm"]{background:rgba(244,33,46,.14);color:#e0245e}
 .sfx-badge[data-label="muted"]{background:rgba(113,118,123,.16);color:#71767b}
 article[data-sfx-state="hide"]:not([data-sfx-reveal]){display:none!important}
+article[data-sfx-state="fold"]:not([data-sfx-leader]){display:none!important}
+article[data-sfx-state="fold"][data-sfx-leader]>*:not(.sfx-thread-bar){display:none!important}
+.sfx-thread-bar{display:none;align-items:center;gap:8px;padding:10px 16px;color:#71767b;
+  font:13px/1.3 TwitterChirp,-apple-system,system-ui,sans-serif}
+article[data-sfx-state="fold"][data-sfx-leader]>.sfx-thread-bar{display:flex}
+.sfx-thread-bar span{flex:1;min-width:0}
+.sfx-thread-bar button{all:unset;cursor:pointer;color:#1d9bf0;font-weight:600;padding:4px 2px}
 article[data-sfx-state="collapse"]:not([data-sfx-reveal])>*:not(.sfx-bar){display:none!important}
 article[data-sfx-state="collapse"]:not([data-sfx-reveal])>.sfx-bar{display:flex}
 .sfx-bar{display:none;align-items:center;gap:8px;padding:8px 16px;color:#71767b;
@@ -128,7 +135,9 @@ export function renderChips(
 	}
 }
 
-export type Visibility = "show" | "collapse" | "hide";
+export type { Visibility } from "../core/decide";
+
+import type { Visibility } from "../core/decide";
 
 export function applyVisibility(
 	article: HTMLElement,
@@ -136,6 +145,7 @@ export function applyVisibility(
 	summary: string,
 	onShow: () => void,
 ): void {
+	if (vis !== "fold") delete article.dataset.sfxLeader;
 	// "Show" reveals only the state it was tapped on; any change re-applies.
 	if (article.dataset.sfxReveal && article.dataset.sfxReveal !== vis)
 		delete article.dataset.sfxReveal;
@@ -167,10 +177,44 @@ export function applyVisibility(
 	if (span && span.textContent !== summary) span.textContent = summary;
 }
 
+/**
+ * One bar for the whole thread: shown on the first folded reply currently in
+ * the DOM (X virtualizes the list, so we can't add our own row).
+ */
+export function renderThreadBar(text: string | null, onShowAll: () => void): void {
+	const folded = [...document.querySelectorAll<HTMLElement>('article[data-sfx-state="fold"]')];
+	const leader = text ? folded[0] : undefined;
+	for (const el of document.querySelectorAll<HTMLElement>("article[data-sfx-leader]"))
+		if (el !== leader) delete el.dataset.sfxLeader;
+	if (!leader || !text) return;
+	leader.dataset.sfxLeader = "1";
+	let bar = leader.querySelector<HTMLElement>(":scope > .sfx-thread-bar");
+	if (!bar) {
+		bar = document.createElement("div");
+		bar.className = "sfx-thread-bar";
+		const span = document.createElement("span");
+		const show = document.createElement("button");
+		show.type = "button";
+		show.textContent = "Show all";
+		bar.append(span, show);
+		bar.addEventListener("click", (e) => e.stopPropagation());
+		leader.prepend(bar);
+	}
+	const btn = bar.querySelector("button")!;
+	btn.onclick = (e) => {
+		e.preventDefault();
+		e.stopPropagation();
+		onShowAll();
+	};
+	const span = bar.querySelector("span")!;
+	if (span.textContent !== text) span.textContent = text;
+}
+
 export function clearAll(): void {
-	for (const el of document.querySelectorAll(".sfx-chips, .sfx-bar")) el.remove();
+	for (const el of document.querySelectorAll(".sfx-chips, .sfx-bar, .sfx-thread-bar")) el.remove();
 	for (const el of document.querySelectorAll<HTMLElement>("[data-sfx-state]")) {
 		delete el.dataset.sfxState;
 		delete el.dataset.sfxReveal;
+		delete el.dataset.sfxLeader;
 	}
 }
