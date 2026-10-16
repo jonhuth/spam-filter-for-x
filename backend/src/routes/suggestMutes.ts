@@ -45,7 +45,7 @@ Rules:
 - No markdown fences, no commentary`;
 
 		const message = await anthropic.messages.create({
-			model: "claude-haiku-4-5-20251001",
+			model: "claude-haiku-5-5",
 			max_tokens: 400,
 			system,
 			messages: [
@@ -56,8 +56,8 @@ Rules:
 			],
 		});
 
-		const content = message.content[0];
-		if (content.type !== "text") {
+		const content = message.content.find((block) => block.type === "text");
+		if (!content || content.type !== "text") {
 			return c.json({ suggestions: [], source: "ai" });
 		}
 

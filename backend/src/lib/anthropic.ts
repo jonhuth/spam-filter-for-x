@@ -118,14 +118,14 @@ export async function classifySingleReply(reply: ReplyData): Promise<BotVerdict 
 
 	try {
 		const message = await anthropic.messages.create({
-			model: "claude-haiku-4-5-20251001",
+			model: "claude-haiku-5-5",
 			max_tokens: 280,
 			system: SYSTEM_PROMPT,
 			messages: [{ role: "user", content: buildSingleUserMessage(reply) }],
 		});
 
-		const content = message.content[0];
-		if (content.type !== "text") return null;
+		const content = message.content.find((block) => block.type === "text");
+		if (!content || content.type !== "text") return null;
 
 		const parsed = parseAIResponse(content.text);
 		if (!parsed) return null;
@@ -149,14 +149,14 @@ export async function classifyBatchReplies(replies: ReplyData[]): Promise<(BotVe
 
 	try {
 		const message = await anthropic.messages.create({
-			model: "claude-haiku-4-5-20251001",
+			model: "claude-haiku-5-5",
 			max_tokens: 640,
 			system: SYSTEM_PROMPT,
 			messages: [{ role: "user", content: buildUserMessage(replies) }],
 		});
 
-		const content = message.content[0];
-		if (content.type !== "text") {
+		const content = message.content.find((block) => block.type === "text");
+		if (!content || content.type !== "text") {
 			return replies.map(() => null);
 		}
 
