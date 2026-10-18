@@ -16,6 +16,8 @@ permissions:
 jobs:
   check:
     name: Typecheck, lint, test, build
+    # hosted-runner-reason: public repo; fork PRs must never execute on homebox, and
+    # public repositories bill no Actions minutes.
     runs-on: ubuntu-slim
     timeout-minutes: 8
     steps:
