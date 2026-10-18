@@ -32,6 +32,7 @@ static/        manifest, popup.html, icons → copied into dist/
 test/          bun tests + fixtures of real X response shapes
 e2e/           Chromium + mock x.com: loads dist/, asserts behavior, screenshots to e2e/out/
 backend/       PARKED; not used by the extension. Slated for retirement (nas container).
+               Deploy only via scripts/deploy-backend.sh on nas (/api/health reports the sha).
 ```
 
 ## Rules

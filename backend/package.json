@@ -1,23 +1,23 @@
 {
-  "name": "spam-filter-for-x-backend",
-  "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "bun run --watch src/index.ts",
-    "start": "bun run src/index.ts",
-    "typecheck": "tsc --noEmit",
-    "lint": "biome check src/",
-    "lint:fix": "biome check --write src/",
-    "check": "bun run typecheck && bun run lint"
-  },
-  "dependencies": {
-    "@anthropic-ai/sdk": "^0.39.0",
-    "hono": "^4.13.8",
-    "lru-cache": "^11.0.0"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^1.9.0",
-    "@types/bun": "^1.2.0",
-    "typescript": "^5.7.0"
-  }
+	"name": "spam-filter-for-x-backend",
+	"version": "1.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "bun run --watch src/index.ts",
+		"start": "bun run src/index.ts",
+		"typecheck": "tsc --noEmit",
+		"lint": "biome check src/",
+		"lint:fix": "biome check --write src/",
+		"check": "bun run typecheck && bun run lint"
+	},
+	"dependencies": {
+		"@anthropic-ai/sdk": "^0.39.0",
+		"hono": "^4.13.8",
+		"lru-cache": "^11.0.0"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2",
+		"@types/bun": "^1.2.0",
+		"typescript": "^5.7.0"
+	}
 }
