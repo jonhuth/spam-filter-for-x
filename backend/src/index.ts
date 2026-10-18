@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import { buildSha } from "./lib/build.js";
 import { getCacheStats } from "./lib/cache.js";
 import classifyRoutes from "./routes/classify.js";
 import lookupRoutes from "./routes/lookup.js";
@@ -141,6 +142,7 @@ app.get("/api/health", (c) => {
 	const cacheStats = getCacheStats();
 	return c.json({
 		status: "ok",
+		sha: buildSha(),
 		timestamp: new Date().toISOString(),
 		cache: cacheStats,
 	});

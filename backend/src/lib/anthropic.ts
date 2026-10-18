@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { BotVerdict, ReplyData, SpamCategory } from "../types.js";
-import { SYSTEM_PROMPT, buildSingleUserMessage, buildUserMessage } from "./prompt.js";
+import { buildSingleUserMessage, buildUserMessage, SYSTEM_PROMPT } from "./prompt.js";
 
 const anthropic = new Anthropic();
 

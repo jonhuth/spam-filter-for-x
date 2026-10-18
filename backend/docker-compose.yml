@@ -1,12 +1,16 @@
-# Deploy on nas:
-#   cd ~/dev/spam-filter-for-x/backend
-#   cp .env.example .env # set ANTHROPIC_API_KEY
-#   docker compose up -d --build
+# Deploy on nas (first time: cp backend/.env.example backend/.env and set ANTHROPIC_API_KEY):
+#   ~/dev/spam-filter-for-x/scripts/deploy-backend.sh
+# It builds x-account-backend:<sha> with GIT_SHA baked in, swaps the container, and checks
+# /api/health reports that sha. Plain `docker compose up -d --build` still works (sha "unknown").
 # Service/container name matches projects/registry.yaml ops.unit (x-account-backend).
 
 services:
   x-account-backend:
-    build: .
+    build:
+      context: .
+      args:
+        GIT_SHA: ${GIT_SHA:-unknown}
+    image: x-account-backend:${IMAGE_TAG:-local}
     container_name: x-account-backend
     restart: unless-stopped
     ports:
