@@ -20,6 +20,7 @@ services:
         required: false
     environment:
       - PORT=3000
+      - NODE_USE_SYSTEM_CA=1
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
     # Network: uses host network or default bridge.
