@@ -1,7 +1,0 @@
-[build]
-builder = "RAILPACK"
-
-[deploy]
-startCommand = "bun run src/index.ts"
-healthcheckPath = "/api/health"
-healthcheckTimeout = 30
