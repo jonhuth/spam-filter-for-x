@@ -16,10 +16,10 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2",
-		"@happy-dom/global-registrator": "^20.14.5",
+		"@happy-dom/global-registrator": "^21.0.4",
 		"@types/bun": "^1.4.2",
 		"@types/chrome": "^0.3.4",
-		"happy-dom": "^20.14.5",
+		"happy-dom": "^21.0.4",
 		"playwright": "^1.63.0",
 		"typescript": "^7.0.2"
 	}
